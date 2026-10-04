@@ -1,0 +1,47 @@
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.EnhancedTouch;
+using UnityEngine.EventSystems;
+using Touch=UnityEngine.InputSystem.EnhancedTouch.Touch;
+namespace FieldOps {
+ [DefaultExecutionOrder(-100)]
+ public sealed class PrototypeInput : MonoBehaviour {
+  public PrototypeHud hud;
+  public Vector2 Move {get;private set;}
+  public Vector2 Look {get;private set;}
+  public bool Fire {get;private set;}
+  public bool Sprint {get;private set;}
+  enum Role {Ignore,Move,Look,Fire,Sprint}
+  readonly Dictionary<int,Role> roles=new Dictionary<int,Role>();
+  int moveFinger=-1,lookFinger=-1;
+  void OnEnable() { EnhancedTouchSupport.Enable(); }
+  void OnDisable() { EnhancedTouchSupport.Disable();Clear();Cursor.lockState=CursorLockMode.None;Cursor.visible=true; }
+  void OnApplicationFocus(bool focus) { if(!focus)Clear(); }
+  void Clear() { roles.Clear();moveFinger=lookFinger=-1;Move=Look=Vector2.zero;Fire=Sprint=false;if(hud!=null)hud.ResetStick(); }
+  void Update() {
+   Move=Look=Vector2.zero;Fire=Sprint=false;
+   foreach(var touch in Touch.activeTouches) {
+    int id=touch.finger.index;
+    if(touch.phase==UnityEngine.InputSystem.TouchPhase.Began) {
+     Role role=Role.Ignore;var point=touch.screenPosition;
+     if(hud.IsMenu(point))role=Role.Ignore;
+     else if(hud.Contains(hud.fire,point))role=Role.Fire;
+     else if(hud.Contains(hud.sprint,point))role=Role.Sprint;
+     else if(hud.Contains(hud.joystick,point)&&moveFinger<0) {role=Role.Move;moveFinger=id;}
+     else if(point.x>Screen.width*.42f&&lookFinger<0) {role=Role.Look;lookFinger=id;}
+     roles[id]=role;
+    }
+    if(!roles.TryGetValue(id,out var active))continue;
+    if(touch.phase==UnityEngine.InputSystem.TouchPhase.Ended||touch.phase==UnityEngine.InputSystem.TouchPhase.Canceled) { roles.Remove(id);if(moveFinger==id){moveFinger=-1;hud.ResetStick();}if(lookFinger==id)lookFinger=-1;continue; }
+    switch(active) {case Role.Move:Move=hud.JoystickValue(touch.screenPosition);break;case Role.Look:Look+=touch.delta/Mathf.Max(1,Screen.height)*105f;break;case Role.Fire:Fire=true;break;case Role.Sprint:Sprint=true;break;}
+   }
+   if(!Application.isMobilePlatform) {
+    var kb=Keyboard.current;var mouse=Mouse.current;
+    if(kb!=null) { if(kb.escapeKey.wasPressedThisFrame){Cursor.lockState=CursorLockMode.None;Cursor.visible=true;} Move+=new Vector2((kb.dKey.isPressed?1:0)-(kb.aKey.isPressed?1:0),(kb.wKey.isPressed?1:0)-(kb.sKey.isPressed?1:0));Sprint|=kb.leftShiftKey.isPressed; }
+    if(mouse!=null) { if(Cursor.lockState==CursorLockMode.Locked) {Look+=mouse.delta.ReadValue()*.1f;Fire|=mouse.leftButton.isPressed;}else if(mouse.leftButton.wasPressedThisFrame&&!hud.IsMenu(mouse.position.ReadValue())&&(EventSystem.current==null||!EventSystem.current.IsPointerOverGameObject())) {Cursor.lockState=CursorLockMode.Locked;Cursor.visible=false;} }
+   }
+   Move=Vector2.ClampMagnitude(Move,1);hud.ShowButtons(Fire,Sprint);
+  }
+ }
+}
