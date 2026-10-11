@@ -1,8 +1,10 @@
 # Field Ops Prototype
 
-A functional, small Android first-person shooter prototype for an academic progress demonstration, built with **Unity 6000.0.70f1**. Walk, look, sprint and fire at an animated training target in a simplified semi-open military field. The interface supports English and Spanish.
+A functional, small Android first-person shooter prototype for an academic progress demonstration, built with **Unity 6000.0.70f1**. Walk, look, sprint and fire at an animated training target in a simplified semi-open military field. Choose a training round from **1 to 300 seconds**, earn one point per target hit, review the final score and play again. The interface supports English and Spanish.
 
-![Actual Android phone preview with Spanish controls](docs/images/android-preview.png)
+![Previous training-range Android phone preview with Spanish controls](docs/images/android-preview.png)
+
+The phone screenshot above is from the previous free-practice delivery, before the timed-round menus. It is not evidence of the new round flow on Android.
 
 This is an original training-range prototype, not an affiliated Call of Duty product. No Call of Duty assets, logos or copied game content are included.
 
@@ -11,7 +13,8 @@ This is an original training-range prototype, not an affiliated Call of Duty pro
 1. Download or clone this repository into a local folder.
 2. In Unity Hub, choose **Add > Add project from disk**, select that folder, and open it with **6000.0.70f1**. Install that editor's **Android Build Support**, including SDK, NDK and OpenJDK, through Hub if needed.
 3. Wait for the first import, then open `Assets/FieldOps/Scenes/TrainingRange.unity`.
-4. Press **Play**. Click the Game view to capture the mouse; press Escape to release it for the language and reset buttons.
+4. Press **Play**. Enter whole seconds (**1–300**, default **60**) and select **START ROUND / INICIAR PARTIDA**. In the active round, click the Game view to capture the mouse; press Escape to release it for the language button.
+5. At zero, firing and scoring stop. Read your score, then select **PLAY AGAIN / VOLVER A JUGAR** to replay the same duration, or **CHANGE DURATION / CAMBIAR DURACIÓN**.
 
 The saved scene is editable: expand the field, target, player and HUD in the Hierarchy. Keep the editor version and pinned packages unchanged for this first demonstration.
 
@@ -24,16 +27,20 @@ The saved scene is editable: expand the field, target, player and HUD in the Hie
 | Sprint | Hold SPRINT / ESPRINTAR while moving | Hold left Shift |
 | Fire | Hold FIRE / DISPARAR | Hold left mouse button |
 | Switch language | ESPAÑOL / ENGLISH button | Escape, then click the button |
-| Clear impacts and counters | RESET / REINICIAR button | Escape, then click the button |
+| Start / repeat a round | Enter seconds and tap the menu buttons | Enter seconds and click the menu buttons |
 
-The target breathes and sways in place. Each hit adds 25 cumulative damage and a visible mark; it deliberately never dies. Damage is a practice counter, not a health bar. At most 60 marks are retained. English is the initial language, and the chosen language is stored locally. Separate fingers can operate movement, look, fire and sprint.
+The visible countdown uses **MM:SS**. Empty, fractional, nonnumeric and out-of-range durations are rejected with a bilingual message, rather than silently clamped or shortened.
+
+The target breathes and sways in place. Each hit adds 25 cumulative damage and a visible mark; it deliberately never dies. Damage is a practice counter, not a health bar. At most 60 marks are retained. English is the initial language, and the chosen language is stored locally. Separate fingers can operate movement, look, fire and sprint. Each successful target hit earns **1 point**; misses earn none. Starting/replaying clears points, damage, impact marks and firing cooldown. There is no mid-round reset that can bypass the timer.
+
+Configuration/results menus block movement, looking, firing and mouse capture. Held controls must be released and pressed again across a round transition. Losing app focus or going into the background pauses active-play time and clears held controls; resuming does not spend the background interval.
 
 ## Build for Android
 
 1. Unlock the phone, connect USB, enable USB debugging and accept the computer authorization prompt if requested.
 2. In Unity, select **Field Ops > Build Android APK**. It creates a development APK at `Builds/FieldOpsPrototype.apk`: ARM64, IL2CPP, OpenGL ES 3 and landscape orientation.
 3. Install that APK, or use Unity's Android build profile with this scene and **Build And Run** after selecting the phone.
-4. On the phone, check movement and looking together, sprint, firing and impact marks, reset and language switching.
+4. On the phone, check numeric keyboard entry, invalid durations, a short round ending at zero, replay/change-duration, language switching, move/look/sprint/fire together, and background/resume while holding controls.
 
 The first import and IL2CPP build can take several minutes. A compiled APK exists locally for the first demonstration; no GitHub release or APK download is provided by this source repository yet. Google Play publication and release signing are not included. Never commit signing keys or credentials.
 
@@ -42,15 +49,18 @@ The first import and IL2CPP build can take several minutes. A compiled APK exist
 - First-person rifle, walking, looking, sprinting and touchscreen controls.
 - Raycast firing, target damage counters and capped persistent impact marks.
 - Animated idle target and original simplified training-field geometry.
+- Configurable 1–300-second training rounds, countdown, hit score, results and replay.
 - English and Spanish buttons and messages.
 
-**Out of scope for this delivery:** sound, attacking enemies, death, aim-down-sights, ammunition, reload, multiplayer, missions and production-quality animation.
+**Out of scope for this delivery:** sound, attacking enemies, death, aim-down-sights, ammunition, reload, multiplayer, campaign missions and production-quality animation.
 
 ## Verification
 
-Automated checks passed: **11/11 EditMode** and **5/5 PlayMode** tests. The corrected APK was installed and launched on a Motorola edge 60 fusion running Android 16; actual phone captures showed the scene and healthy bilingual HUD. The user subsequently reported that physical movement/look, sprint, firing counters/marks, reset and language checks all passed.
+Current timed-round source checks passed: **39/39 EditMode** and **9/9 PlayMode** tests. These include duration boundaries, countdown/score rules, queued touch interactions with the actual menu/InputField, expiry/replay, held-input suppression and pause/focus behavior. Configuration, active-play and results views were rendered and visually checked in the editor.
 
-These are distinct evidence sources, not a measured performance benchmark. FPS, heat and long-session pause/resume endurance have not been measured. See [VERIFICATION.md](VERIFICATION.md) for scope, regression evidence and reproduction commands.
+The previously built free-practice APK was physically checked on a Motorola edge 60 fusion running Android 16. **That older APK and its phone screenshot do not contain or prove this new timed-round feature.** The new flow still requires its own Android build/device verification; editor automation sets text programmatically after touch focus, not through a physical Android keyboard.
+
+No FPS, thermal or long-session endurance benchmark is claimed. See [VERIFICATION.md](VERIFICATION.md) for evidence and reproduction commands.
 
 ## Project layout and editing
 

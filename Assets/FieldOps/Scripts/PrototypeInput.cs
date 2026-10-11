@@ -8,6 +8,8 @@ namespace FieldOps {
  [DefaultExecutionOrder(-100)]
  public sealed class PrototypeInput : MonoBehaviour {
   public PrototypeHud hud;
+  public TrainingSession session;
+  bool requireMouseRelease;
   public Vector2 Move {get;private set;}
   public Vector2 Look {get;private set;}
   public bool Fire {get;private set;}
@@ -18,9 +20,11 @@ namespace FieldOps {
   void OnEnable() { EnhancedTouchSupport.Enable(); }
   void OnDisable() { EnhancedTouchSupport.Disable();Clear();Cursor.lockState=CursorLockMode.None;Cursor.visible=true; }
   void OnApplicationFocus(bool focus) { if(!focus)Clear(); }
+  public void ClearGameplay() {Clear();requireMouseRelease=true;Cursor.lockState=CursorLockMode.None;Cursor.visible=true;}
   void Clear() { roles.Clear();moveFinger=lookFinger=-1;Move=Look=Vector2.zero;Fire=Sprint=false;if(hud!=null)hud.ResetStick(); }
   void Update() {
    Move=Look=Vector2.zero;Fire=Sprint=false;
+   if(!session.GameplayEnabled) {Clear();Cursor.lockState=CursorLockMode.None;Cursor.visible=true;hud.ShowButtons(false,false);return;}
    foreach(var touch in Touch.activeTouches) {
     int id=touch.finger.index;
     if(touch.phase==UnityEngine.InputSystem.TouchPhase.Began) {
@@ -38,8 +42,9 @@ namespace FieldOps {
    }
    if(!Application.isMobilePlatform) {
     var kb=Keyboard.current;var mouse=Mouse.current;
+    if(mouse==null||!mouse.leftButton.isPressed)requireMouseRelease=false;
     if(kb!=null) { if(kb.escapeKey.wasPressedThisFrame){Cursor.lockState=CursorLockMode.None;Cursor.visible=true;} Move+=new Vector2((kb.dKey.isPressed?1:0)-(kb.aKey.isPressed?1:0),(kb.wKey.isPressed?1:0)-(kb.sKey.isPressed?1:0));Sprint|=kb.leftShiftKey.isPressed; }
-    if(mouse!=null) { if(Cursor.lockState==CursorLockMode.Locked) {Look+=mouse.delta.ReadValue()*.1f;Fire|=mouse.leftButton.isPressed;}else if(mouse.leftButton.wasPressedThisFrame&&!hud.IsMenu(mouse.position.ReadValue())&&(EventSystem.current==null||!EventSystem.current.IsPointerOverGameObject())) {Cursor.lockState=CursorLockMode.Locked;Cursor.visible=false;} }
+    if(mouse!=null) { if(Cursor.lockState==CursorLockMode.Locked) {Look+=mouse.delta.ReadValue()*.1f;Fire|=mouse.leftButton.isPressed&&!requireMouseRelease;}else if(mouse.leftButton.wasPressedThisFrame&&!hud.IsMenu(mouse.position.ReadValue())&&(EventSystem.current==null||!EventSystem.current.IsPointerOverGameObject())) {Cursor.lockState=CursorLockMode.Locked;Cursor.visible=false;} }
    }
    Move=Vector2.ClampMagnitude(Move,1);hud.ShowButtons(Fire,Sprint);
   }

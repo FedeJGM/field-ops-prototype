@@ -1,0 +1,18 @@
+using NUnit.Framework;
+namespace FieldOps.Tests {
+ public class TrainingRoundTests {
+  [TestCase("1",1)][TestCase("60",60)][TestCase("300",300)]
+  public void ValidDurationIncludesBoundaries(string text,int expected) { Assert.IsTrue(TrainingRound.TryDuration(text,out int seconds));Assert.AreEqual(expected,seconds); }
+  [TestCase("1000")][TestCase("0")][TestCase("301")][TestCase("")][TestCase("abc")][TestCase("1.5")][TestCase("-5")][TestCase("999999999999")][TestCase("+60")]
+  public void InvalidDurationIsRejected(string text) { Assert.IsFalse(TrainingRound.TryDuration(text,out _)); }
+  [Test] public void StartCreatesActiveRoundAndResetsScore() { var r=new TrainingRound();Assert.AreEqual(RoundPhase.Configuration,r.Phase);Assert.IsFalse(r.RecordHit());Assert.IsTrue(r.Start("1"));Assert.AreEqual(RoundPhase.Active,r.Phase);Assert.AreEqual(1,r.RemainingSeconds);Assert.IsTrue(r.RecordHit());Assert.AreEqual(1,r.Score);r.Tick(1);Assert.AreEqual(RoundPhase.Results,r.Phase);Assert.IsTrue(r.Start("1"));Assert.AreEqual(0,r.Score);Assert.AreEqual(1,r.RemainingSeconds); }
+  [Test] public void InvalidStartDoesNotAlterSelectedDuration() {var r=new TrainingRound();Assert.IsTrue(r.Start("300"));r.Tick(300);Assert.IsFalse(r.Start("301"));Assert.AreEqual(300,r.DurationSeconds);Assert.AreEqual(RoundPhase.Results,r.Phase);}
+  [Test] public void ExpiryStopsHitsAndClampsTimer() { var r=new TrainingRound();Assert.IsTrue(r.Start("60"));r.Tick(59.99);Assert.AreEqual("00:01",r.Clock);Assert.IsTrue(r.RecordHit());r.Tick(.02);Assert.AreEqual(RoundPhase.Results,r.Phase);Assert.AreEqual("00:00",r.Clock);Assert.AreEqual(0,r.RemainingSeconds);Assert.IsFalse(r.RecordHit());r.Tick(40);Assert.AreEqual(1,r.Score); }
+  [Test] public void TimerFormatsFiveMinutesAndCeilingSeconds() {var r=new TrainingRound();Assert.IsTrue(r.Start("300"));Assert.AreEqual("05:00",r.Clock);r.Tick(.1);Assert.AreEqual("05:00",r.Clock);r.Tick(59.9);Assert.AreEqual("04:00",r.Clock);}
+  [Test] public void PausedTimeDoesNotConsumeRoundOrPermitHits() {var r=new TrainingRound();Assert.IsTrue(r.Start("60"));r.Tick(10);r.SetSuspended(true);r.Tick(100);Assert.AreEqual(50,r.RemainingSeconds);Assert.IsFalse(r.RecordHit());r.SetSuspended(false);r.Tick(5);Assert.AreEqual(45,r.RemainingSeconds);Assert.IsTrue(r.RecordHit());}
+  [Test] public void ActiveRoundCannotBeRestartedOrConfiguredToBypassTimer() {var r=new TrainingRound();Assert.IsTrue(r.Start("60"));r.Tick(10);Assert.IsFalse(r.Start("300"));r.Configure();Assert.AreEqual(RoundPhase.Active,r.Phase);Assert.AreEqual(50,r.RemainingSeconds);}
+  [Test] public void ResultsCanReturnToConfigurationAndRetainSelection() {var r=new TrainingRound();Assert.IsTrue(r.Start("2"));r.Tick(2);r.Configure();Assert.AreEqual(RoundPhase.Configuration,r.Phase);Assert.AreEqual(2,r.DurationSeconds);Assert.IsFalse(r.RecordHit());}
+  [Test] public void ShotGateCanResetForAReplay() {var gate=new ShotGate(.12);Assert.IsTrue(gate.TryFire(10));Assert.IsFalse(gate.TryFire(10.01));gate.Reset();Assert.IsTrue(gate.TryFire(10.01));}
+  [Test] public void InvalidElapsedValuesCannotIncreaseOrExpireTime() {var r=new TrainingRound();Assert.IsTrue(r.Start("60"));r.Tick(-1);r.Tick(double.NaN);r.Tick(double.PositiveInfinity);Assert.AreEqual(60,r.RemainingSeconds);}
+ }
+}
