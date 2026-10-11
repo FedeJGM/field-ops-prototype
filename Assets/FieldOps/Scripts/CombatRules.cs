@@ -15,6 +15,9 @@ namespace FieldOps {
  public static class GameText {
   public static string Get(string key,bool spanish) {
    switch(key) {
+    case "reload": return spanish?"RECARGAR":"RELOAD";
+    case "reloading": return spanish?"RECARGANDO":"RELOADING";
+    case "ammo": return spanish?"MUNICIÓN":"AMMO";
     case "roundTitle": return spanish?"RETO DE ENTRENAMIENTO":"TRAINING CHALLENGE";
     case "duration": return spanish?"DURACIÓN EN SEGUNDOS (1–300)":"DURATION IN SECONDS (1–300)";
     case "start": return spanish?"INICIAR PARTIDA":"START ROUND";

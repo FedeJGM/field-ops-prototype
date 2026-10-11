@@ -63,6 +63,37 @@ namespace FieldOps.Tests {
    Assert.AreEqual(65,session.Round.Score);Assert.IsFalse(hud.resetButton.gameObject.activeInHierarchy);hud.resetButton.onClick.Invoke();Assert.AreEqual(65,session.Round.Score);
    session.Round.Tick(60);yield return null;hud.replayButton.onClick.Invoke();yield return null;Assert.AreEqual(0,session.Round.Score);Assert.AreEqual(0,target.Damage.Hits);Assert.AreEqual(0,target.GetComponentsInChildren<Renderer>().Count(r=>r.name=="Bullet impact"));
   }
+  [UnityTest] public IEnumerator FiringConsumesAmmoAndEmptyMagazineStopsScoring() {
+   var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;motor.enabled=false;Camera.main.transform.LookAt(target.transform.position+Vector3.up*1.25f);
+   Assert.AreEqual(30,rifle.Ammo.Count);while(rifle.Ammo.Count>1)rifle.Ammo.TryConsume();
+   var fire=Point(hud.fire);Touch(4,UnityEngine.InputSystem.TouchPhase.Began,fire);yield return new WaitForSeconds(.5f);
+   Assert.AreEqual(0,rifle.Ammo.Count);Assert.AreEqual(1,session.Round.Score,"Only the last round may score; an empty magazine must not fire.");Assert.AreEqual(1,target.Damage.Hits);Assert.IsFalse(rifle.Ammo.IsReloading,"Empty magazine must not reload by itself.");
+   Touch(4,UnityEngine.InputSystem.TouchPhase.Ended,fire);yield return null;yield return null;
+  }
+  [UnityTest] public IEnumerator ReloadButtonRefillsAfterReloadTimeAndBlocksFiringMeanwhile() {
+   var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;motor.enabled=false;Camera.main.transform.LookAt(target.transform.position+Vector3.up*1.25f);
+   for(int i=0;i<10;i++)rifle.Ammo.TryConsume();Assert.AreEqual(20,rifle.Ammo.Count);yield return Tap(6,hud.reload);
+   Assert.IsTrue(rifle.Ammo.IsReloading);Assert.IsTrue(hud.ammoLabel.text.Contains(GameText.Get("reloading",false)));
+   var fire=Point(hud.fire);Touch(7,UnityEngine.InputSystem.TouchPhase.Began,fire);yield return new WaitForSeconds(.4f);Assert.AreEqual(20,rifle.Ammo.Count,"Firing while reloading must not consume ammo.");Assert.AreEqual(0,target.Damage.Hits);
+   Touch(7,UnityEngine.InputSystem.TouchPhase.Ended,fire);yield return new WaitForSeconds(1.4f);
+   Assert.IsFalse(rifle.Ammo.IsReloading);Assert.AreEqual(30,rifle.Ammo.Count);Assert.IsTrue(hud.ammoLabel.text.Contains("30"));Assert.IsTrue(hud.ammoLabel.text.Contains("∞"));
+  }
+  [UnityTest] public IEnumerator ReloadKeyStartsReloadAndReloadButtonIsInertInMenus() {
+   var rifle=hud.rifle;yield return Tap(11,hud.reload);Assert.IsFalse(rifle.Ammo.IsReloading);
+   Assert.IsTrue(session.StartRound("60"));yield return null;rifle.Ammo.TryConsume();var keyboard=InputSystem.AddDevice<Keyboard>();
+   InputSystem.QueueStateEvent(keyboard,new KeyboardState(Key.R));yield return null;yield return null;InputSystem.QueueStateEvent(keyboard,new KeyboardState());yield return null;
+   Assert.IsTrue(rifle.Ammo.IsReloading);InputSystem.RemoveDevice(keyboard);
+  }
+  [UnityTest] public IEnumerator NewRoundRestoresFullMagazineAndCancelsReload() {
+   var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;for(int i=0;i<12;i++)rifle.Ammo.TryConsume();rifle.Ammo.BeginReload();
+   session.Round.Tick(60);yield return null;hud.replayButton.onClick.Invoke();yield return null;
+   Assert.AreEqual(30,rifle.Ammo.Count);Assert.IsFalse(rifle.Ammo.IsReloading);
+  }
+  [UnityTest] public IEnumerator PausedTimeDoesNotAdvanceReload() {
+   var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;rifle.Ammo.TryConsume();rifle.Ammo.BeginReload();
+   session.SetPause(true);yield return new WaitForSeconds(1.7f);Assert.IsTrue(rifle.Ammo.IsReloading,"Reload must not progress while the round is suspended.");
+   session.SetPause(false);yield return new WaitForSeconds(1.6f);Assert.IsFalse(rifle.Ammo.IsReloading);Assert.AreEqual(30,rifle.Ammo.Count);
+  }
   IEnumerator CapturePreview(string fileName) {
    if(SystemInfo.graphicsDeviceType!=UnityEngine.Rendering.GraphicsDeviceType.Null) {
     var camera=Camera.main;var canvas=hud.GetComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceCamera;canvas.worldCamera=camera;canvas.planeDistance=.2f;yield return null;Canvas.ForceUpdateCanvases();

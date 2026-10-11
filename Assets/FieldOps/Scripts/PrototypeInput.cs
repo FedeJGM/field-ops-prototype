@@ -14,6 +14,7 @@ namespace FieldOps {
   public Vector2 Look {get;private set;}
   public bool Fire {get;private set;}
   public bool Sprint {get;private set;}
+  public bool Reload {get;private set;}
   enum Role {Ignore,Move,Look,Fire,Sprint}
   readonly Dictionary<int,Role> roles=new Dictionary<int,Role>();
   int moveFinger=-1,lookFinger=-1;
@@ -23,13 +24,14 @@ namespace FieldOps {
   public void ClearGameplay() {Clear();requireMouseRelease=true;Cursor.lockState=CursorLockMode.None;Cursor.visible=true;}
   void Clear() { roles.Clear();moveFinger=lookFinger=-1;Move=Look=Vector2.zero;Fire=Sprint=false;if(hud!=null)hud.ResetStick(); }
   void Update() {
-   Move=Look=Vector2.zero;Fire=Sprint=false;
+   Move=Look=Vector2.zero;Fire=Sprint=Reload=false;
    if(!session.GameplayEnabled) {Clear();Cursor.lockState=CursorLockMode.None;Cursor.visible=true;hud.ShowButtons(false,false);return;}
    foreach(var touch in Touch.activeTouches) {
     int id=touch.finger.index;
     if(touch.phase==UnityEngine.InputSystem.TouchPhase.Began) {
      Role role=Role.Ignore;var point=touch.screenPosition;
      if(hud.IsMenu(point))role=Role.Ignore;
+     else if(hud.Contains(hud.reload,point)){role=Role.Ignore;Reload=true;}
      else if(hud.Contains(hud.fire,point))role=Role.Fire;
      else if(hud.Contains(hud.sprint,point))role=Role.Sprint;
      else if(hud.Contains(hud.joystick,point)&&moveFinger<0) {role=Role.Move;moveFinger=id;}
@@ -43,7 +45,7 @@ namespace FieldOps {
    if(!Application.isMobilePlatform) {
     var kb=Keyboard.current;var mouse=Mouse.current;
     if(mouse==null||!mouse.leftButton.isPressed)requireMouseRelease=false;
-    if(kb!=null) { if(kb.escapeKey.wasPressedThisFrame){Cursor.lockState=CursorLockMode.None;Cursor.visible=true;} Move+=new Vector2((kb.dKey.isPressed?1:0)-(kb.aKey.isPressed?1:0),(kb.wKey.isPressed?1:0)-(kb.sKey.isPressed?1:0));Sprint|=kb.leftShiftKey.isPressed; }
+    if(kb!=null) { if(kb.escapeKey.wasPressedThisFrame){Cursor.lockState=CursorLockMode.None;Cursor.visible=true;} Reload|=kb.rKey.wasPressedThisFrame;Move+=new Vector2((kb.dKey.isPressed?1:0)-(kb.aKey.isPressed?1:0),(kb.wKey.isPressed?1:0)-(kb.sKey.isPressed?1:0));Sprint|=kb.leftShiftKey.isPressed; }
     if(mouse!=null) { if(Cursor.lockState==CursorLockMode.Locked) {Look+=mouse.delta.ReadValue()*.1f;Fire|=mouse.leftButton.isPressed&&!requireMouseRelease;}else if(mouse.leftButton.wasPressedThisFrame&&!hud.IsMenu(mouse.position.ReadValue())&&(EventSystem.current==null||!EventSystem.current.IsPointerOverGameObject())) {Cursor.lockState=CursorLockMode.Locked;Cursor.visible=false;} }
    }
    Move=Vector2.ClampMagnitude(Move,1);hud.ShowButtons(Fire,Sprint);

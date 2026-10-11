@@ -66,6 +66,27 @@ Reported by the user after manual testing on the phone: **all checks passed as e
 
 These are user-reported results, not recorded measurements: no screenshots of the new flow were captured, and lock-screen and focus-loss-while-holding-controls cases were not separately itemized. No FPS/thermal benchmark, prolonged endurance, broad Android compatibility or production/release signing is claimed.
 
+## Ammunition and manual reload (2026-10-11)
+
+Rules: 30-round magazine, infinite reserve, reload only by button (or R in the editor), 1.5 s reload that blocks firing, no auto-reload on an empty magazine. Reload time advances only while the round is actively playing, so pause/focus loss freezes it. Every round start/replay restores a full magazine and cancels any reload. The HUD shows `AMMO n / ∞`, or `RELOADING` while reloading; the RELOAD button turns red when the magazine is empty. Reload is a one-frame edge read in `PrototypeInput` (touch on the button or R key); the button is hidden and inert in menus.
+
+| Evidence | Result | Scope |
+|---|---|---|
+| Strict RED, `Logs/ammo-red.xml` | 10 failed, 39 passed | `Magazine` rule scaffold throwing `NotImplementedException` |
+| Strict RED, `Logs/ammo2-red-edit.xml` / `ammo2-red-play.xml` | EditMode 4 failed / PlayMode 5 failed | Saved reload UI, bilingual labels and rifle/HUD integration missing |
+| Final EditMode, `Logs/ammo2-green-edit.xml` | **53 passed, 0 failed** | Adds 10 `Magazine` rule tests, saved-scene reload wiring and bilingual labels |
+| Final PlayMode, `Logs/ammo2-green-play.xml` | **14 passed, 0 failed** | Adds: firing consumes ammo and an empty magazine stops scoring; reload button refills after 1.5 s and blocks firing; R key; button inert in menus; new round restores ammo; pause freezes reload |
+| Editor render preview | Visually checked | `AMMO 30 / ∞` and RELOAD button above FIRE; the infinity glyph renders |
+| Android build | Build succeeded | Same Unity 6000.0.70f1 route, ARM64 IL2CPP, GLES3 |
+
+APK: 41,493,278 bytes; SHA-256 `D395F1A87B9DCCFA9EB6DB566910F8B7682734CB21CBF53EB5945BA579BDE6D6`. Saved scene on disk: SHA-256 `C5FB0454B54D7268335419F72DD0ACD8FD5B903CDE26C7C24B107EBFC079DCEA`.
+
+Observed by the assistant: the APK hash differs from the previous build, the packaged scene contains the reload button, `adb install -r` succeeded without uninstalling, and the activity was the top resumed activity. Logcat showed no `NullReference`; the "Exception" lines belonged to the system window manager and a vendor service looking up the unpublished package on the Play Store.
+
+Reported by the user after manual testing on the Motorola edge 60 fusion: **all checks passed as expected** (counter, consumption, reload timing and blocked firing, empty magazine, button position, round restart, background during reload). These are user-reported results; no screenshots of this build were captured, and no FPS/thermal benchmark is claimed.
+
+Tests establish rule behavior and scene wiring. Queued touches stand in for physical fingers, and reload timing uses real elapsed time of about 1.5 s.
+
 ## Historical first-delivery evidence (before timed rounds)
 
 The earlier free-practice prototype passed **11 EditMode / 5 PlayMode** tests and built/installed/launched on a Motorola edge 60 fusion running Android 16. The user reported physical move/look/sprint/fire/marks/reset/language checks passing. The public screenshot is from that earlier delivery.
@@ -78,6 +99,6 @@ An initial sandbox-only license IPC failure was harness unavailability, not beha
 
 ## Work-unit and rollback boundary
 
-This feature (commit `913cea2`) is one cohesive unit: new TrainingRound/TrainingSession scripts and metas; combat/input/rifle/target/HUD integration; saved scene generation and scene; new rule/UI tests and updated runtime tests; README/this record. Rollback removes the new files and restores only those modified tracked files to the pre-feature prototype, without touching pinned packages or unrelated work. No release or APK upload was created.
+The timed-round feature (commit `913cea2`) is one cohesive unit: new TrainingRound/TrainingSession scripts and metas; combat/input/rifle/target/HUD integration; saved scene generation and scene; new rule/UI tests and updated runtime tests; README/this record. Rollback removes the new files and restores only those modified tracked files to the pre-feature prototype, without touching pinned packages or unrelated work. No release or APK upload was created.
 
 Sound, attacking/dead enemies, ADS, ammunition, reload, multiplayer and campaign missions remain out of scope.

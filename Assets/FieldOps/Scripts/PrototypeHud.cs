@@ -3,12 +3,14 @@ using UnityEngine;
 using UnityEngine.UI;
 namespace FieldOps {
  public sealed class PrototypeHud : MonoBehaviour {
-  public RectTransform safeRoot, joystick, stick, fire, sprint;
+  public RectTransform safeRoot, joystick, stick, fire, sprint, reload;
   public Button languageButton, resetButton, startButton, replayButton, configureButton;
   public Text title, status, moveLabel, lookLabel, fireLabel, sprintLabel, resetLabel, hitLabel, help;
   public Text roundTitle,durationLabel,durationError,scoreRule,timerLabel,resultTitle,resultScore;
   public GameObject menuBlocker,configurationPanel,resultsPanel,crosshair;
   public InputField durationInput;
+  public Text reloadLabel,ammoLabel;
+  public Rifle rifle;
   public TrainingSession session;
   public TrainingTarget target;
   bool spanish,invalidDuration; Rect lastSafe; int lastWidth,lastHeight;
@@ -31,11 +33,12 @@ namespace FieldOps {
   void ToggleLanguage() {spanish=!spanish;PlayerPrefs.SetInt("language",spanish?1:0);Refresh();}
   void Refresh() {
    title.text="FIELD OPS / PROTOTYPE";moveLabel.text=GameText.Get("move",spanish);lookLabel.text=GameText.Get("look",spanish);fireLabel.text=GameText.Get("fire",spanish);sprintLabel.text=GameText.Get("sprint",spanish);resetLabel.text=GameText.Get("reset",spanish);help.text=GameText.Get("help",spanish);languageButton.GetComponentInChildren<Text>().text=spanish?"ENGLISH":"ESPAÑOL";
-   roundTitle.text=GameText.Get("roundTitle",spanish);durationLabel.text=GameText.Get("duration",spanish);scoreRule.text=GameText.Get("scoreRule",spanish);durationError.text=invalidDuration?GameText.Get("durationError",spanish):"";startButton.GetComponentInChildren<Text>().text=GameText.Get("start",spanish);replayButton.GetComponentInChildren<Text>().text=GameText.Get("replay",spanish);configureButton.GetComponentInChildren<Text>().text=GameText.Get("configure",spanish);resultTitle.text=GameText.Get("finished",spanish);RefreshRound();
+   roundTitle.text=GameText.Get("roundTitle",spanish);durationLabel.text=GameText.Get("duration",spanish);scoreRule.text=GameText.Get("scoreRule",spanish);durationError.text=invalidDuration?GameText.Get("durationError",spanish):"";startButton.GetComponentInChildren<Text>().text=GameText.Get("start",spanish);replayButton.GetComponentInChildren<Text>().text=GameText.Get("replay",spanish);configureButton.GetComponentInChildren<Text>().text=GameText.Get("configure",spanish);resultTitle.text=GameText.Get("finished",spanish);reloadLabel.text=GameText.Get("reload",spanish);RefreshRound();
   }
   void RefreshRound() {
    bool active=session.Round.Phase==RoundPhase.Active;crosshair.SetActive(active);menuBlocker.SetActive(!active);configurationPanel.SetActive(session.Round.Phase==RoundPhase.Configuration);resultsPanel.SetActive(session.Round.Phase==RoundPhase.Results);
-   joystick.gameObject.SetActive(active);moveLabel.gameObject.SetActive(active);fire.gameObject.SetActive(active);sprint.gameObject.SetActive(active);lookLabel.gameObject.SetActive(active);help.gameObject.SetActive(active&&!Application.isMobilePlatform);hitLabel.gameObject.SetActive(active);timerLabel.gameObject.SetActive(active);
+   joystick.gameObject.SetActive(active);moveLabel.gameObject.SetActive(active);fire.gameObject.SetActive(active);sprint.gameObject.SetActive(active);lookLabel.gameObject.SetActive(active);help.gameObject.SetActive(active&&!Application.isMobilePlatform);hitLabel.gameObject.SetActive(active);timerLabel.gameObject.SetActive(active);reload.gameObject.SetActive(active);ammoLabel.gameObject.SetActive(active);
+   ammoLabel.text=rifle.Ammo.IsReloading?GameText.Get("reloading",spanish):GameText.Get("ammo",spanish)+" "+rifle.Ammo.Count+" / ∞";reload.GetComponent<Image>().color=rifle.Ammo.IsReloading?new Color(.5f,.5f,.5f,.6f):(rifle.Ammo.IsEmpty?new Color(.85f,.25f,.2f,.9f):new Color(.12f,.2f,.28f,.85f));
    status.text=GameText.Get(session.Round.Suspended&&active?"paused":"status",spanish);
    hitLabel.text=GameText.Get("score",spanish)+": "+session.Round.Score+"   |   "+GameText.Get("damage",spanish)+": "+target.Damage.TotalDamage;
    timerLabel.text=GameText.Get("time",spanish)+"  "+session.Round.Clock;

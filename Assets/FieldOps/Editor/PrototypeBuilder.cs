@@ -44,7 +44,7 @@ namespace FieldOps.Editor {
    var flash=GunPart("Muzzle flash",new Vector3(0,.01f,.51f),new Vector3(.09f,.09f,.08f),orange,weapon);flash.SetActive(false);
    var input=player.AddComponent<PrototypeInput>();var motor=player.AddComponent<FirstPersonMotor>();motor.input=input;motor.cameraPivot=cameraObject.transform;var rifle=player.AddComponent<Rifle>();rifle.input=input;rifle.view=cam;rifle.weapon=weapon;rifle.muzzleFlash=flash;
    var session=player.AddComponent<TrainingSession>();session.input=input;session.rifle=rifle;session.target=target;input.session=session;rifle.session=session;target.session=session;
-   var hud=CreateHud(target,session);input.hud=hud;
+   var hud=CreateHud(target,session,rifle);input.hud=hud;
    Configure();EditorSceneManager.SaveScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene(),ScenePath);EditorBuildSettings.scenes=new[]{new EditorBuildSettingsScene(ScenePath,true)};AssetDatabase.SaveAssets();Debug.Log("FIELD_OPS_SCENE_GENERATED "+ScenePath);
   }
   static void Configure() {
@@ -62,13 +62,15 @@ namespace FieldOps.Editor {
   static Material Mat(string name,Color color) {string path="Assets/FieldOps/Materials/"+name+".mat";var m=AssetDatabase.LoadAssetAtPath<Material>(path);if(m==null){m=new Material(Shader.Find("Standard"));AssetDatabase.CreateAsset(m,path);}m.color=color;m.SetFloat("_Glossiness",.05f);return m;}
   static GameObject Shape(string name,PrimitiveType type,Vector3 position,Vector3 scale,Material material,Transform parent) {var go=GameObject.CreatePrimitive(type);go.name=name;go.transform.SetParent(parent,false);go.transform.localPosition=position;go.transform.localScale=scale;go.GetComponent<Renderer>().sharedMaterial=material;return go;}
   static GameObject GunPart(string name,Vector3 p,Vector3 s,Material m,Transform parent) {var go=Shape(name,PrimitiveType.Cube,p,s,m,parent);Object.DestroyImmediate(go.GetComponent<Collider>());go.layer=2;var r=go.GetComponent<Renderer>();r.shadowCastingMode=ShadowCastingMode.Off;r.receiveShadows=false;return go;}
-  static PrototypeHud CreateHud(TrainingTarget target,TrainingSession session) {
+  static PrototypeHud CreateHud(TrainingTarget target,TrainingSession session,Rifle rifle) {
    font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");var canvas=new GameObject("HUD",typeof(Canvas),typeof(CanvasScaler),typeof(GraphicRaycaster));canvas.GetComponent<Canvas>().renderMode=RenderMode.ScreenSpaceOverlay;var scaler=canvas.GetComponent<CanvasScaler>();scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;scaler.referenceResolution=new Vector2(1600,900);scaler.matchWidthOrHeight=.5f;
-   var safe=Rect("Safe area",canvas.transform,new Vector2(.5f,.5f),Vector2.zero,Vector2.zero);safe.anchorMin=Vector2.zero;safe.anchorMax=Vector2.one;var hud=canvas.AddComponent<PrototypeHud>();hud.safeRoot=safe;hud.target=target;hud.session=session;
+   var safe=Rect("Safe area",canvas.transform,new Vector2(.5f,.5f),Vector2.zero,Vector2.zero);safe.anchorMin=Vector2.zero;safe.anchorMax=Vector2.one;var hud=canvas.AddComponent<PrototypeHud>();hud.safeRoot=safe;hud.target=target;hud.session=session;hud.rifle=rifle;
    var header=Panel("Header",safe,new Vector2(0,1),new Vector2(310,-65),new Vector2(580,100),new Color(.05f,.08f,.09f,.8f));hud.title=Label("Title",header,new Vector2(.5f,.5f),new Vector2(0,20),new Vector2(550,35),26,TextAnchor.MiddleLeft);hud.title.color=new Color(.9f,.76f,.42f);hud.status=Label("Status",header,new Vector2(.5f,.5f),new Vector2(0,-18),new Vector2(550,28),16,TextAnchor.MiddleLeft);
    hud.hitLabel=Label("Hit counter",safe,new Vector2(.5f,1),new Vector2(0,-145),new Vector2(800,40),26);
    hud.joystick=Panel("Movement joystick",safe,Vector2.zero,new Vector2(175,165),new Vector2(190,190),new Color(.08f,.13f,.14f,.6f));hud.stick=Panel("Joystick thumb",hud.joystick,new Vector2(.5f,.5f),Vector2.zero,new Vector2(70,70),new Color(.62f,.69f,.56f,.8f));hud.moveLabel=Label("Movement label",safe,Vector2.zero,new Vector2(175,48),new Vector2(250,40),22);
    hud.fire=Panel("Fire touch button",safe,new Vector2(1,0),new Vector2(-160,170),new Vector2(175,130),new Color(.7f,.32f,.12f,.8f));hud.fireLabel=Label("Fire label",hud.fire,new Vector2(.5f,.5f),Vector2.zero,new Vector2(170,50),26);
+   hud.reload=Panel("Reload touch button",safe,new Vector2(1,0),new Vector2(-160,300),new Vector2(175,85),new Color(.12f,.2f,.28f,.85f));hud.reloadLabel=Label("Reload label",hud.reload,new Vector2(.5f,.5f),Vector2.zero,new Vector2(170,40),23);
+   hud.ammoLabel=Label("Ammo counter",safe,new Vector2(1,0),new Vector2(-160,385),new Vector2(300,40),26);
    hud.sprint=Panel("Sprint touch button",safe,new Vector2(1,0),new Vector2(-365,115),new Vector2(180,85),new Color(.15f,.22f,.15f,.85f));hud.sprintLabel=Label("Sprint label",hud.sprint,new Vector2(.5f,.5f),Vector2.zero,new Vector2(180,40),23);
    hud.lookLabel=Label("Look hint",safe,new Vector2(1,.5f),new Vector2(-245,0),new Vector2(400,40),20);hud.lookLabel.color=new Color(1,1,1,.55f);
    hud.languageButton=MenuButton("Language",safe,new Vector2(1,1),new Vector2(-130,-48),new Vector2(210,60));hud.resetButton=MenuButton("Reset",safe,new Vector2(1,1),new Vector2(-130,-123),new Vector2(210,60));hud.resetLabel=hud.resetButton.GetComponentInChildren<Text>();
