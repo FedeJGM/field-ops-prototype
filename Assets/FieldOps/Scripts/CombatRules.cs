@@ -20,6 +20,8 @@ namespace FieldOps {
     case "weaponSmg": return spanish?"SUBFUSIL":"SMG";
     case "weaponShotgun": return spanish?"ESCOPETA":"SHOTGUN";
     case "weaponSniper": return spanish?"FRANCOTIRADOR":"SNIPER RIFLE";
+    case "fps": return "FPS";
+    case "fpsCounter": return spanish?"CONTADOR DE FPS":"FPS COUNTER";
     case "editLayout": return spanish?"EDITAR BOTONES":"EDIT LAYOUT";
     case "save": return spanish?"GUARDAR":"SAVE";
     case "resetLayout": return spanish?"RESTABLECER":"RESET";

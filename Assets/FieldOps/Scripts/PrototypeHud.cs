@@ -18,6 +18,8 @@ namespace FieldOps {
   public Text weaponNameLabel,weaponStatsLabel;public Button weaponPrevButton,weaponNextButton;
   [System.Serializable] public sealed class WeaponSelectorUi {public Text name,stats;public Button prev,next;}
   public WeaponSelectorUi resultsWeapon,settingsWeapon;
+  public Text fpsLabel;public Button fpsButton;
+  readonly FpsMeter fpsMeter=new FpsMeter();bool showFps=true;
   public bool EditingLayout {get;private set;}
   Dictionary<string,RectTransform> movable;
   readonly Dictionary<string,Vector2> defaultPositions=new Dictionary<string,Vector2>();
@@ -30,6 +32,7 @@ namespace FieldOps {
   bool spanish,invalidDuration; Rect lastSafe; int lastWidth,lastHeight;
   void Start() {
    spanish=PlayerPrefs.GetInt("language",0)==1;languageButton.onClick.AddListener(ToggleLanguage);
+   showFps=GameSettings.ShowFps;fpsButton.onClick.AddListener(ToggleFps);fpsLabel.text="-- FPS";
    settingsButton.onClick.AddListener(OpenSettings);closeSettingsButton.onClick.AddListener(CloseSettings);aimModeButton.onClick.AddListener(ToggleAimMode);crossButton.onClick.AddListener(ToggleCross);settingsPanel.SetActive(false);
    startButton.onClick.AddListener(StartSelectedRound);replayButton.onClick.AddListener(Replay);configureButton.onClick.AddListener(Configure);
    durationInput.onValueChanged.AddListener(_=>{if(invalidDuration){invalidDuration=false;Refresh();}});
@@ -39,7 +42,7 @@ namespace FieldOps {
    editLayoutButton.onClick.AddListener(BeginEditLayout);saveLayoutButton.onClick.AddListener(()=>SaveLayout());foreach(var selector in Selectors()) {selector.prev.onClick.AddListener(()=>ChangeWeapon(-1));selector.next.onClick.AddListener(()=>ChangeWeapon(1));}resetLayoutButton.onClick.AddListener(ResetLayout);cancelLayoutButton.onClick.AddListener(CancelLayout);layoutPanel.SetActive(false);
    Canvas.ForceUpdateCanvases();ApplySavedLayout();
   }
-  void Update() {UpdateSafeArea();RefreshRound();}
+  void Update() {UpdateSafeArea();RefreshRound();if(fpsMeter.Add(Time.unscaledDeltaTime))RefreshFpsText();fpsLabel.gameObject.SetActive(showFps);}
   void StartSelectedRound() {invalidDuration=!session.StartRound(durationInput.text);Refresh();}
   void Replay() {session.StartRound(session.Round.DurationSeconds.ToString(CultureInfo.InvariantCulture));Refresh();}
   void Configure() {session.Configure();durationInput.text=session.Round.DurationSeconds.ToString(CultureInfo.InvariantCulture);invalidDuration=false;Refresh();}
@@ -120,10 +123,16 @@ namespace FieldOps {
   void OpenSettings() {settingsPanel.SetActive(true);session.SetSettingsOpen(true);Refresh();}
   void CloseSettings() {settingsPanel.SetActive(false);session.SetSettingsOpen(false);Refresh();}
   void ToggleAimMode() {GameSettings.AimToggle=!GameSettings.AimToggle;rifle.Aim.Toggle=GameSettings.AimToggle;rifle.Aim.Reset();Refresh();}
+  void ToggleFps() {showFps=!GameSettings.ShowFps;GameSettings.ShowFps=showFps;Refresh();}
+  void RefreshFpsText() {
+   float fps=fpsMeter.Fps;fpsLabel.text=Mathf.RoundToInt(fps)+" "+GameText.Get("fps",spanish);
+   switch(FpsMeter.Band(fps)) {case FpsBand.Good:fpsLabel.color=new Color(.55f,.9f,.55f);break;case FpsBand.Fair:fpsLabel.color=new Color(1f,.85f,.4f);break;default:fpsLabel.color=new Color(1f,.45f,.4f);break;}
+  }
   void ToggleCross() {GameSettings.KeepCrossWhileAiming=!GameSettings.KeepCrossWhileAiming;Refresh();}
   void RefreshSettingsText() {
    aimLabel.text=GameText.Get("aim",spanish);settingsTitle.text=GameText.Get("settings",spanish);settingsButton.GetComponentInChildren<Text>().text=GameText.Get("settings",spanish);closeSettingsButton.GetComponentInChildren<Text>().text=GameText.Get("close",spanish);
    aimModeLabel.text=GameText.Get("aimMode",spanish)+": "+GameText.Get(GameSettings.AimToggle?"toggle":"hold",spanish);crossLabel.text=GameText.Get("keepCross",spanish)+": "+GameText.Get(GameSettings.KeepCrossWhileAiming?"on":"off",spanish);
+   fpsButton.GetComponentInChildren<Text>().text=GameText.Get("fpsCounter",spanish)+": "+GameText.Get(showFps?"on":"off",spanish);
    editLayoutButton.GetComponentInChildren<Text>().text=GameText.Get("editLayout",spanish);saveLayoutButton.GetComponentInChildren<Text>().text=GameText.Get("save",spanish);resetLayoutButton.GetComponentInChildren<Text>().text=GameText.Get("resetLayout",spanish);cancelLayoutButton.GetComponentInChildren<Text>().text=GameText.Get("cancel",spanish);
    if(movable!=null)RefreshLayoutState();
   }

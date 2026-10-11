@@ -11,7 +11,7 @@ namespace FieldOps.Tests {
  public class RuntimeSmokeTests {
   TrainingSession session; PrototypeInput input; FirstPersonMotor motor; TrainingTarget target; PrototypeHud hud; Touchscreen screen;
   [UnitySetUp] public IEnumerator LoadScene() {
-   PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");PlayerPrefs.DeleteKey("weapon");
+   PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");PlayerPrefs.DeleteKey("weapon");PlayerPrefs.DeleteKey("showFps");
    yield return SceneManager.LoadSceneAsync("TrainingRange");
    yield return null; yield return null;
    input=Object.FindFirstObjectByType<PrototypeInput>();motor=Object.FindFirstObjectByType<FirstPersonMotor>();target=Object.FindFirstObjectByType<TrainingTarget>();hud=Object.FindFirstObjectByType<PrototypeHud>();
@@ -22,7 +22,7 @@ namespace FieldOps.Tests {
    session=Object.FindFirstObjectByType<TrainingSession>();session.SetPause(false);session.SetFocus(true);
    screen=InputSystem.AddDevice<Touchscreen>();InputSystem.EnableDevice(screen);Canvas.ForceUpdateCanvases();
   }
-  [UnityTearDown] public IEnumerator Cleanup() {InputSystem.RemoveDevice(screen);PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");PlayerPrefs.DeleteKey("weapon");yield return null;}
+  [UnityTearDown] public IEnumerator Cleanup() {InputSystem.RemoveDevice(screen);PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");PlayerPrefs.DeleteKey("weapon");PlayerPrefs.DeleteKey("showFps");yield return null;}
   Vector2 Point(RectTransform rect) {return RectTransformUtility.WorldToScreenPoint(null,rect.position);}
   void Touch(int id,UnityEngine.InputSystem.TouchPhase phase,Vector2 point) {InputSystem.QueueStateEvent(screen,new TouchState {touchId=id,phase=phase,position=point});}
   [UnityTest] public IEnumerator SceneRendersWithConfiguredRuntimeObjects() {
@@ -284,6 +284,42 @@ namespace FieldOps.Tests {
     Assert.IsTrue(rifle.Ammo.IsReloading,def.nameKey);yield return new WaitForSeconds(def.reloadSeconds-.5f);Assert.IsTrue(rifle.Ammo.IsReloading,def.nameKey+" must still be reloading before its sound ends.");
     yield return new WaitForSeconds(.7f);Assert.IsFalse(rifle.Ammo.IsReloading,def.nameKey);Assert.AreEqual(def.magazineSize,rifle.Ammo.Count,def.nameKey);yield return FinishRound();
    }
+  }
+  [UnityTest] public IEnumerator MapShowcaseCapturesViewsFromSeveralAngles() {
+   motor.enabled=false;Assert.IsTrue(session.StartRound("60"));yield return null;var cam=Camera.main;var player=motor.transform;
+   Assert.AreEqual(CameraClearFlags.Skybox,cam.clearFlags);yield return CapturePreview("map-start.bmp");
+   foreach(var view in new[]{("left",-70f),("right",70f),("back",180f)}) {player.rotation=Quaternion.Euler(0,view.Item2,0);yield return null;yield return CapturePreview("map-"+view.Item1+".bmp");}
+   player.rotation=Quaternion.identity;cam.transform.position=new Vector3(0,24,-36);cam.transform.rotation=Quaternion.Euler(33,0,0);yield return null;yield return CapturePreview("map-overview.bmp");
+  }
+  [UnityTest] public IEnumerator FrameLoggerCollectsFrameTimesAndReportsInTheExpectedFormat() {
+   var logger=Object.FindFirstObjectByType<FrameLogger>();Assert.IsNotNull(logger,"The player carries the frame logger.");
+   yield return new WaitForSeconds(.5f);Assert.Greater(logger.Stats.Count,5);var report=logger.Report();StringAssert.IsMatch(@"^FIELD_OPS_FPS avg=[0-9.]+ p95ms=[0-9.]+ maxms=[0-9.]+ n=[0-9]+$",report);
+  }
+  // Renders only the sky from many yaw angles and returns, per angle, the strongest vertical-line step relative to the typical column step.
+  float[] SkySeamScores(int stepDegrees,float pitch) {
+   var go=new GameObject("Sky probe");var cam=go.AddComponent<Camera>();cam.clearFlags=CameraClearFlags.Skybox;cam.cullingMask=0;cam.fieldOfView=40;cam.nearClipPlane=.1f;cam.farClipPlane=10;
+   var rt=new RenderTexture(512,512,24);cam.targetTexture=rt;var tex=new Texture2D(512,512,TextureFormat.RGB24,false);var scores=new System.Collections.Generic.List<float>();var previous=RenderTexture.active;
+   for(int yaw=0;yaw<360;yaw+=stepDegrees) {
+    go.transform.rotation=Quaternion.Euler(-pitch,yaw,0);cam.Render();RenderTexture.active=rt;tex.ReadPixels(new Rect(0,0,512,512),0,0);tex.Apply();var px=tex.GetPixels32();
+    var steps=new float[511];for(int x=0;x<511;x++){float sum=0;for(int y=0;y<512;y+=4){var a=px[y*512+x];var b=px[y*512+x+1];sum+=Mathf.Abs(a.r-b.r)+Mathf.Abs(a.g-b.g)+Mathf.Abs(a.b-b.b);}steps[x]=sum/128f;}
+    var sorted=(float[])steps.Clone();System.Array.Sort(sorted);float median=Mathf.Max(.5f,sorted[sorted.Length/2]);scores.Add(sorted[sorted.Length-1]/median);
+   }
+   RenderTexture.active=previous;cam.targetTexture=null;Object.Destroy(rt);Object.Destroy(tex);Object.Destroy(go);return scores.ToArray();
+  }
+  [UnityTest] public IEnumerator SkyShowsNoVerticalSeamLineFromAnyAngle() {
+   yield return null;var scores=SkySeamScores(5,10);float worst=scores.Max();int worstYaw=System.Array.IndexOf(scores,worst)*5;
+   Assert.Less(worst,8f,"A panorama wrap seam shows as one vertical line far stronger than normal cloud edges (worst at yaw "+worstYaw+", score "+worst.ToString("0.0")+").");
+  }
+  [UnityTest] public IEnumerator FpsCounterIsOnByDefaultAndShowsAReasonableNumber() {
+   Assert.IsTrue(hud.fpsLabel.gameObject.activeInHierarchy,"Visible by default, even in the menu.");yield return new WaitForSeconds(1.2f);
+   StringAssert.IsMatch(@"^[0-9]+ FPS$",hud.fpsLabel.text);int value=int.Parse(hud.fpsLabel.text.Split(' ')[0]);Assert.Greater(value,0);Assert.Less(value,2000);
+  }
+  [UnityTest] public IEnumerator SettingsSwitchHidesAndShowsTheCounterAndRemembersTheChoice() {
+   hud.settingsButton.onClick.Invoke();yield return null;Assert.IsTrue(hud.fpsButton.GetComponentInChildren<UnityEngine.UI.Text>().text.Contains(GameText.Get("on",false)));
+   hud.fpsButton.onClick.Invoke();yield return null;Assert.IsFalse(GameSettings.ShowFps);Assert.IsFalse(hud.fpsLabel.gameObject.activeInHierarchy);Assert.IsTrue(hud.fpsButton.GetComponentInChildren<UnityEngine.UI.Text>().text.Contains(GameText.Get("off",false)));
+   hud.languageButton.onClick.Invoke();yield return null;Assert.AreEqual(GameText.Get("fpsCounter",true)+": "+GameText.Get("off",true),hud.fpsButton.GetComponentInChildren<UnityEngine.UI.Text>().text);hud.languageButton.onClick.Invoke();
+   yield return SceneManager.LoadSceneAsync("TrainingRange");yield return null;yield return null;var reloaded=Object.FindFirstObjectByType<PrototypeHud>();Assert.IsFalse(reloaded.fpsLabel.gameObject.activeInHierarchy,"The choice survives a restart.");
+   reloaded.settingsButton.onClick.Invoke();yield return null;reloaded.fpsButton.onClick.Invoke();yield return null;Assert.IsTrue(GameSettings.ShowFps);Assert.IsTrue(reloaded.fpsLabel.gameObject.activeInHierarchy);
   }
   IEnumerator CapturePreview(string fileName) {
    if(SystemInfo.graphicsDeviceType!=UnityEngine.Rendering.GraphicsDeviceType.Null) {

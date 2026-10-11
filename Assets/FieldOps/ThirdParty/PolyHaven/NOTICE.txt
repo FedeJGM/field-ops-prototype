@@ -1,0 +1,17 @@
+Poly Haven textures and sky (CC0 1.0 Universal)
+
+Source: https://polyhaven.com - "All assets are CC0" (https://polyhaven.com/license). Downloaded 2026-10-11; file integrity checked against the md5 published by the Poly Haven API.
+Attribution is not required by CC0; it is given here as a courtesy and for traceability.
+
+Textures (1K JPG, used as downloaded; *_diff = color, *_nor_gl = normal map; the sky uses the 2K panorama):
+  - brown_mud_dry ("Brown Mud Dry") by Rob Tuytel - https://polyhaven.com/a/brown_mud_dry
+  - brushed_concrete_03 ("Brushed Concrete 03") by Amal Kumar - https://polyhaven.com/a/brushed_concrete_03
+  - asphalt_02 ("Asphalt 02") by Rob Tuytel - https://polyhaven.com/a/asphalt_02
+  - container_side ("Container Side") by Dimitrios Savva - https://polyhaven.com/a/container_side
+  - green_metal_rust ("Green Metal Rust") by Rob Tuytel - https://polyhaven.com/a/green_metal_rust
+  - corrugated_iron_03 ("Corrugated Iron 03") by Charlotte Baglioni - https://polyhaven.com/a/corrugated_iron_03
+  - hessian_230 ("Hessian 230") by colormass, Rico Cilliers - https://polyhaven.com/a/hessian_230
+
+Sky:
+  - belfast_open_field ("Belfast Open Field") by Dimitrios Savva, Jarod Guest - https://polyhaven.com/a/belfast_open_field
+    belfast_open_field_sky_2k.jpg is a derivative: the 2K (2048x1024) HDR panorama was converted to an 8-bit image (exposure set to mid grey, Reinhard tone mapping, gamma 2.2) so it is light enough for mobile.

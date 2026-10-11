@@ -67,6 +67,12 @@ namespace FieldOps.Tests {
    Assert.IsTrue(hud.weaponNameLabel.transform.IsChildOf(hud.configurationPanel.transform),"The selector lives in the pre-round menu.");
    foreach(var graphic in hud.GetComponentsInChildren<UnityEngine.UI.Graphic>(true))Assert.IsNotNull(graphic.material,graphic.name+" must keep the serialized UiDefault material.");
   }
+  [Test] public void SavedSceneHasTheFpsCounterAndItsSettingsButton() {
+   OpenRifle();var hud=UnityEngine.Object.FindFirstObjectByType<PrototypeHud>();Assert.IsNotNull(hud.fpsLabel);Assert.IsNotNull(hud.fpsButton);Assert.IsTrue(hud.fpsButton.transform.IsChildOf(hud.settingsPanel.transform),"The switch lives in the settings menu.");Assert.IsFalse(hud.fpsLabel.raycastTarget,"The counter must not intercept touches.");
+   foreach(var graphic in hud.GetComponentsInChildren<UnityEngine.UI.Graphic>(true))Assert.IsNotNull(graphic.material,graphic.name+" must keep the serialized UiDefault material.");
+  }
+  [TestCase("fps","FPS","FPS")][TestCase("fpsCounter","FPS COUNTER","CONTADOR DE FPS")]
+  public void FpsLabelsAreBilingual(string key,string en,string es) { Assert.AreEqual(en,GameText.Get(key,false));Assert.AreEqual(es,GameText.Get(key,true)); }
   [TestCase("weaponPistol","PISTOL","PISTOLA")][TestCase("weaponRifle","ASSAULT RIFLE","FUSIL DE ASALTO")][TestCase("weaponSmg","SMG","SUBFUSIL")][TestCase("weaponShotgun","SHOTGUN","ESCOPETA")][TestCase("weaponSniper","SNIPER RIFLE","FRANCOTIRADOR")]
   public void WeaponNamesAreBilingualAndGeneric(string key,string en,string es) { Assert.AreEqual(en,GameText.Get(key,false));Assert.AreEqual(es,GameText.Get(key,true)); }
  }

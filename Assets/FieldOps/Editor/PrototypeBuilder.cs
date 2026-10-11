@@ -18,17 +18,9 @@ namespace FieldOps.Editor {
    Directory.CreateDirectory("Assets/FieldOps/Scenes");Directory.CreateDirectory("Assets/FieldOps/Materials");
    EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single); uiMaterial=EnsureUiMaterial();
    sand=Mat("Sand",new Color(.53f,.48f,.34f));concrete=Mat("Concrete",new Color(.5f,.51f,.46f));olive=Mat("Olive",new Color(.25f,.3f,.18f));dark=Mat("Dark",new Color(.07f,.08f,.075f));skin=Mat("Skin",new Color(.65f,.5f,.36f));metal=Mat("Metal",new Color(.2f,.22f,.23f));impact=Mat("Impact",new Color(.025f,.017f,.012f));orange=Mat("Signal",new Color(.95f,.45f,.1f));
-   RenderSettings.ambientMode=AmbientMode.Flat;RenderSettings.ambientLight=new Color(.55f,.58f,.62f);RenderSettings.fog=true;RenderSettings.fogColor=new Color(.67f,.73f,.77f);RenderSettings.fogMode=FogMode.Linear;RenderSettings.fogStartDistance=30;RenderSettings.fogEndDistance=90;
-   var sun=new GameObject("Afternoon sun").AddComponent<Light>();sun.type=LightType.Directional;sun.intensity=1.1f;sun.shadows=LightShadows.Soft;sun.transform.rotation=Quaternion.Euler(45,-35,0);
+   EnvironmentBuilder.CreateAtmosphere();
    var world=new GameObject("Training field — editable geometry").transform;
-   Shape("Ground",PrimitiveType.Cube,new Vector3(0,-.15f,0),new Vector3(44,.3f,56),sand,world);
-   Shape("Firing lane",PrimitiveType.Cube,new Vector3(0,.006f,-1),new Vector3(5,.012f,24),concrete,world);
-   for(int i=0;i<6;i++)Shape("Lane marking",PrimitiveType.Cube,new Vector3(0,.015f,-10+i*4),new Vector3(.12f,.02f,1.5f),orange,world);
-   Shape("Backstop",PrimitiveType.Cube,new Vector3(0,1.5f,12),new Vector3(20,3,.7f),concrete,world);
-   Shape("Boundary west",PrimitiveType.Cube,new Vector3(-22,1,0),new Vector3(.5f,2,56),concrete,world);Shape("Boundary east",PrimitiveType.Cube,new Vector3(22,1,0),new Vector3(.5f,2,56),concrete,world);Shape("Boundary south",PrimitiveType.Cube,new Vector3(0,1,-28),new Vector3(44,2,.5f),concrete,world);Shape("Boundary north",PrimitiveType.Cube,new Vector3(0,1,28),new Vector3(44,2,.5f),concrete,world);
-   for(int i=0;i<9;i++) {float x=i%2==0?-8:9;float z=-18+i*4.6f;Shape("Supply crate "+i,PrimitiveType.Cube,new Vector3(x,.7f,z),new Vector3(1.7f,1.4f,1.5f),olive,world);Shape("Crate strap",PrimitiveType.Cube,new Vector3(x,.7f,z-.76f),new Vector3(.16f,1.45f,.025f),metal,world);if(i%3==0)Shape("Stacked supply",PrimitiveType.Cube,new Vector3(x,1.95f,z),new Vector3(1.3f,1.1f,1.3f),olive,world); }
-   for(int i=0;i<5;i++) {Shape("Concrete barrier",PrimitiveType.Cube,new Vector3(-14+i*7, .6f,19),new Vector3(3,1.2f,.65f),concrete,world);Shape("Safety post",PrimitiveType.Cylinder,new Vector3(-4+i*2, .55f,7),new Vector3(.13f,.55f,.13f),orange,world);}
-   for(int i=0;i<10;i++) {float x=i%2==0?-19:19;var canopy=Shape("Low-poly tree",PrimitiveType.Sphere,new Vector3(x,3,-22+i*5),new Vector3(3,3.5f,3),olive,world);Object.DestroyImmediate(canopy.GetComponent<Collider>());Shape("Tree trunk",PrimitiveType.Cylinder,new Vector3(x,1,-22+i*5),new Vector3(.4f,1,.4f),dark,world);}
+   EnvironmentBuilder.Build(world);
    var targetRoot=new GameObject("Training target — indestructible");targetRoot.transform.position=new Vector3(0,0,2);
    var target=targetRoot.AddComponent<TrainingTarget>();target.impactMaterial=impact;var rig=new GameObject("Idle rig").transform;rig.SetParent(targetRoot.transform,false);target.idleRig=rig;
    Shape("Left boot",PrimitiveType.Cube,new Vector3(-.16f,.12f,0),new Vector3(.24f,.24f,.35f),dark,rig);Shape("Right boot",PrimitiveType.Cube,new Vector3(.16f,.12f,0),new Vector3(.24f,.24f,.35f),dark,rig);
@@ -36,13 +28,12 @@ namespace FieldOps.Editor {
    Shape("Torso armor",PrimitiveType.Cube,new Vector3(0,1.22f,0),new Vector3(.65f,.65f,.32f),olive,rig);Shape("Vest plate",PrimitiveType.Cube,new Vector3(0,1.25f,-.185f),new Vector3(.48f,.43f,.08f),metal,rig);
    Shape("Left arm",PrimitiveType.Capsule,new Vector3(-.44f,1.14f,0),new Vector3(.2f,.34f,.2f),olive,rig);Shape("Right arm",PrimitiveType.Capsule,new Vector3(.44f,1.14f,0),new Vector3(.2f,.34f,.2f),olive,rig);
    Shape("Head",PrimitiveType.Sphere,new Vector3(0,1.77f,0),new Vector3(.34f,.4f,.34f),skin,rig);Shape("Helmet",PrimitiveType.Sphere,new Vector3(0,1.92f,0),new Vector3(.39f,.25f,.39f),olive,rig);
-   Shape("Target platform",PrimitiveType.Cube,new Vector3(0,.015f,2),new Vector3(2,.03f,2),dark,world);
    var player=new GameObject("Player");player.transform.position=new Vector3(0,.06f,-12);var controller=player.AddComponent<CharacterController>();controller.height=1.8f;controller.radius=.3f;controller.center=new Vector3(0,.9f,0);controller.stepOffset=.3f;
-   var cameraObject=new GameObject("First-person camera");cameraObject.tag="MainCamera";cameraObject.transform.SetParent(player.transform,false);cameraObject.transform.localPosition=new Vector3(0,1.65f,0);var cam=cameraObject.AddComponent<Camera>();cam.fieldOfView=68;cam.nearClipPlane=.03f;cam.farClipPlane=100;cam.clearFlags=CameraClearFlags.SolidColor;cam.backgroundColor=new Color(.67f,.73f,.77f);cameraObject.AddComponent<AudioListener>();
+   var cameraObject=new GameObject("First-person camera");cameraObject.tag="MainCamera";cameraObject.transform.SetParent(player.transform,false);cameraObject.transform.localPosition=new Vector3(0,1.65f,0);var cam=cameraObject.AddComponent<Camera>();cam.fieldOfView=68;cam.nearClipPlane=.03f;cam.farClipPlane=100;cam.clearFlags=CameraClearFlags.Skybox;cameraObject.AddComponent<AudioListener>();
    var weapon=new GameObject("Weapon holder").transform;weapon.SetParent(cameraObject.transform,false);weapon.localPosition=new Vector3(.28f,-.24f,.46f);
    var flash=GunPart("Muzzle flash",Vector3.zero,new Vector3(.09f,.09f,.08f),orange,weapon);flash.SetActive(false);
    CreateWeapons(weapon,out var weaponDefinitions,out var weaponModels);
-   var input=player.AddComponent<PrototypeInput>();var motor=player.AddComponent<FirstPersonMotor>();motor.input=input;motor.cameraPivot=cameraObject.transform;var rifle=player.AddComponent<Rifle>();var sfx=player.AddComponent<GameAudio>();rifle.sfx=sfx;target.sfx=sfx;rifle.input=input;rifle.view=cam;rifle.weapon=weapon;rifle.muzzleFlash=flash;rifle.weapons=weaponDefinitions;rifle.models=weaponModels;
+   var input=player.AddComponent<PrototypeInput>();var motor=player.AddComponent<FirstPersonMotor>();motor.input=input;motor.cameraPivot=cameraObject.transform;player.AddComponent<FrameLogger>();var rifle=player.AddComponent<Rifle>();var sfx=player.AddComponent<GameAudio>();rifle.sfx=sfx;target.sfx=sfx;rifle.input=input;rifle.view=cam;rifle.weapon=weapon;rifle.muzzleFlash=flash;rifle.weapons=weaponDefinitions;rifle.models=weaponModels;
    var session=player.AddComponent<TrainingSession>();session.input=input;session.rifle=rifle;session.target=target;input.session=session;rifle.session=session;target.session=session;
    var hud=CreateHud(target,session,rifle);input.hud=hud;
    Configure();EditorSceneManager.SaveScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene(),ScenePath);EditorBuildSettings.scenes=new[]{new EditorBuildSettingsScene(ScenePath,true)};AssetDatabase.SaveAssets();Debug.Log("FIELD_OPS_SCENE_GENERATED "+ScenePath);
@@ -111,6 +102,7 @@ namespace FieldOps.Editor {
    font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");var canvas=new GameObject("HUD",typeof(Canvas),typeof(CanvasScaler),typeof(GraphicRaycaster));canvas.GetComponent<Canvas>().renderMode=RenderMode.ScreenSpaceOverlay;var scaler=canvas.GetComponent<CanvasScaler>();scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;scaler.referenceResolution=new Vector2(1600,900);scaler.matchWidthOrHeight=.5f;
    var safe=Rect("Safe area",canvas.transform,new Vector2(.5f,.5f),Vector2.zero,Vector2.zero);safe.anchorMin=Vector2.zero;safe.anchorMax=Vector2.one;var hud=canvas.AddComponent<PrototypeHud>();hud.safeRoot=safe;hud.target=target;hud.session=session;hud.rifle=rifle;
    var header=Panel("Header",safe,new Vector2(0,1),new Vector2(310,-65),new Vector2(580,100),new Color(.05f,.08f,.09f,.8f));hud.title=Label("Title",header,new Vector2(.5f,.5f),new Vector2(0,20),new Vector2(550,35),26,TextAnchor.MiddleLeft);hud.title.color=new Color(.9f,.76f,.42f);hud.status=Label("Status",header,new Vector2(.5f,.5f),new Vector2(0,-18),new Vector2(550,28),16,TextAnchor.MiddleLeft);
+   hud.fpsLabel=Label("FPS counter",safe,new Vector2(.5f,1),new Vector2(50,-30),new Vector2(180,36),24);hud.fpsLabel.raycastTarget=false;
    hud.hitLabel=Label("Hit counter",safe,new Vector2(.5f,1),new Vector2(0,-145),new Vector2(800,40),26);
    hud.joystick=Panel("Movement joystick",safe,Vector2.zero,new Vector2(175,165),new Vector2(190,190),new Color(.08f,.13f,.14f,.6f));hud.stick=Panel("Joystick thumb",hud.joystick,new Vector2(.5f,.5f),Vector2.zero,new Vector2(70,70),new Color(.62f,.69f,.56f,.8f));hud.moveLabel=Label("Movement label",hud.joystick,new Vector2(.5f,.5f),new Vector2(0,-117),new Vector2(250,40),22);
    hud.fire=Panel("Fire touch button",safe,new Vector2(1,0),new Vector2(-160,170),new Vector2(175,130),new Color(.7f,.32f,.12f,.8f));hud.fireLabel=Label("Fire label",hud.fire,new Vector2(.5f,.5f),Vector2.zero,new Vector2(170,50),26);
@@ -145,13 +137,14 @@ namespace FieldOps.Editor {
    panel.gameObject.SetActive(false);
   }
   static void CreateSettingsMenu(PrototypeHud hud,RectTransform safe) {
-   var panel=Panel("Settings panel",safe,new Vector2(.5f,.5f),Vector2.zero,new Vector2(760,640),new Color(.09f,.14f,.15f,1f));panel.GetComponent<Image>().raycastTarget=true;hud.settingsPanel=panel.gameObject;
-   hud.settingsTitle=Label("Settings title",panel,new Vector2(.5f,.5f),new Vector2(0,270),new Vector2(710,55),32);
-   hud.aimModeButton=MenuButton("Aim mode",panel,new Vector2(.5f,.5f),new Vector2(0,185),new Vector2(680,70));hud.aimModeLabel=hud.aimModeButton.GetComponentInChildren<Text>();
-   hud.crossButton=MenuButton("Keep cross",panel,new Vector2(.5f,.5f),new Vector2(0,105),new Vector2(680,70));hud.crossLabel=hud.crossButton.GetComponentInChildren<Text>();
-   hud.editLayoutButton=MenuButton("Edit layout",panel,new Vector2(.5f,.5f),new Vector2(0,25),new Vector2(680,70));
-   hud.settingsWeapon=CreateWeaponSelector(panel,-50);
-   hud.closeSettingsButton=MenuButton("Close settings",panel,new Vector2(.5f,.5f),new Vector2(0,-235),new Vector2(420,65));
+   var panel=Panel("Settings panel",safe,new Vector2(.5f,.5f),Vector2.zero,new Vector2(760,720),new Color(.09f,.14f,.15f,1f));panel.GetComponent<Image>().raycastTarget=true;hud.settingsPanel=panel.gameObject;
+   hud.settingsTitle=Label("Settings title",panel,new Vector2(.5f,.5f),new Vector2(0,310),new Vector2(710,55),32);
+   hud.aimModeButton=MenuButton("Aim mode",panel,new Vector2(.5f,.5f),new Vector2(0,225),new Vector2(680,70));hud.aimModeLabel=hud.aimModeButton.GetComponentInChildren<Text>();
+   hud.crossButton=MenuButton("Keep cross",panel,new Vector2(.5f,.5f),new Vector2(0,145),new Vector2(680,70));hud.crossLabel=hud.crossButton.GetComponentInChildren<Text>();
+   hud.fpsButton=MenuButton("FPS counter",panel,new Vector2(.5f,.5f),new Vector2(0,65),new Vector2(680,70));
+   hud.editLayoutButton=MenuButton("Edit layout",panel,new Vector2(.5f,.5f),new Vector2(0,-15),new Vector2(680,70));
+   hud.settingsWeapon=CreateWeaponSelector(panel,-90);
+   hud.closeSettingsButton=MenuButton("Close settings",panel,new Vector2(.5f,.5f),new Vector2(0,-275),new Vector2(420,65));
    panel.gameObject.SetActive(false);
   }
   static void CreateRoundMenu(PrototypeHud hud,RectTransform safe) {
