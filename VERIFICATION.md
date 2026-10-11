@@ -126,6 +126,28 @@ Observed by the assistant: each APK hash differed from the previous build, `adb 
 
 Reported by the user after listening on the Motorola edge 60 fusion: all sound checks passed as expected, and the redesigned reload sound was accepted. The assistant cannot listen to audio, so the tests establish structure, timing, relative loudness and wiring, not realism; realism is the user's judgment. Synthesized sound approximates a real recording and is not a replacement for one. No screenshots, loudness measurements or FPS/thermal benchmarks are claimed.
 
+## Configurable HUD layout (2026-10-11)
+
+First phase of the second round of features (configurable HUD, then multi-weapon assets and audio; see the project plan). The player can drag the joystick and the fire, reload, aim and sprint buttons from SETTINGS > EDIT LAYOUT and save the layout. The settings and language buttons are deliberately fixed so a bad layout can never lock the player out.
+
+Rules: `HudLayout` (pure) stores per-button offsets from the button's own anchor corner, in canvas units, as versioned JSON in PlayerPrefs (`hudLayout`); only buttons that differ from their default place are stored, an all-default layout removes the key, and corrupt, unsupported, duplicate, unknown or out-of-range data yields the default places. Positions are clamped so the whole button stays inside the safe area (re-applied when the safe area changes). Dragging uses the same polled touch input as gameplay (`PrototypeInput` forwards pointers to `PrototypeHud.LayoutPointer` while editing; the mouse works in the editor). SAVE is refused while buttons overlap each other or the fixed settings/language buttons or the toolbar. The round is suspended while editing and resumes afterwards. The joystick label and the ammo counter are now children of their buttons so they move with them; the toolbar sits at the top center, where no default button is.
+
+| Evidence | Result | Scope |
+|---|---|---|
+| Strict RED, `Logs/hud-red-edit.xml` / `hud-red-play.xml` | EditMode 27 failed / PlayMode 8 failed | `HudLayout` and `GameSettings.HudLayout` scaffolds, missing editor UI and bilingual labels |
+| Final EditMode, `Logs/hud-final-edit.xml` | **115 passed, 0 failed** | Adds 17 `HudLayout` rule tests (9 are corrupt-data cases), 3 persistence tests, saved-scene wiring and 6 bilingual label cases |
+| Final PlayMode, `Logs/hud-green2-play.xml` | **33 passed, 0 failed** | Adds 9: drag moves a button and only its new spot fires; layout survives a scene reload; cancel; reset then save clears the stored layout; overlap blocks saving; buttons cannot leave the screen; corrupt stored layout falls back to defaults; editing pauses and resumes the round; the default layout is saveable |
+| Editor render previews | Visually checked | Edit toolbar in English and Spanish (`Logs/hud-edit-preview.bmp`, `hud-edit-preview-es.bmp`); all labels fit |
+| Android build | Build succeeded | Same Unity 6000.0.70f1 route, ARM64 IL2CPP, GLES3 |
+
+A first green run showed one real defect rather than a test problem: PlayMode runs at 640x480 (4:3), where the first toolbar position (bottom center) covered the default aim button and made the default layout unsaveable. The toolbar was moved to the top center, which no default button occupies at any aspect ratio.
+
+APK: 41,551,798 bytes; SHA-256 `AFFA3AC90458CD78BD2A59E31E5249FC7CB763907F05A21CEF10A38C3CA487C2`. Saved scene on disk: SHA-256 `400B21739D80CA7D82ED362BB19BEB0930F6A97668F4328FB3891DA5073E321B`.
+
+Observed by the assistant: the APK hash differs from the previous build, the packaged scene contains the layout toolbar, `adb install -r` succeeded without uninstalling, the activity was the top resumed activity, and logcat showed no `NullReference`, fatal or Unity exceptions.
+
+Reported by the user after manual testing on the Motorola edge 60 fusion: **all checks passed as expected** (entering the editor from the menu and during a round, dragging, screen limits, overlap blocking, save and play, persistence after fully closing the app, cancel, reset, round pause, Spanish text fit). These are user-reported results; no screenshots of this build were captured, positions only (no button scaling) are supported, and no FPS/thermal benchmark is claimed. The tests drive input with queued touches, not physical fingers.
+
 ## Historical first-delivery evidence (before timed rounds)
 
 The earlier free-practice prototype passed **11 EditMode / 5 PlayMode** tests and built/installed/launched on a Motorola edge 60 fusion running Android 16. The user reported physical move/look/sprint/fire/marks/reset/language checks passing. The public screenshot is from that earlier delivery.

@@ -4,6 +4,11 @@ namespace FieldOps {
  public static class GameSettings {
   const string AimToggleKey="aimToggle",KeepCrossKey="keepCross";
   public static bool AimToggle { get => PlayerPrefs.GetInt(AimToggleKey,0)==1; set {PlayerPrefs.SetInt(AimToggleKey,value?1:0);PlayerPrefs.Save();} }
+  const string HudLayoutKey="hudLayout";
+  public static HudLayout HudLayout {
+   get => HudLayout.FromJson(PlayerPrefs.GetString(HudLayoutKey,""));
+   set {var json=value==null?"":value.ToJson();if(json.Length==0)PlayerPrefs.DeleteKey(HudLayoutKey);else PlayerPrefs.SetString(HudLayoutKey,json);PlayerPrefs.Save();}
+  }
   public static bool KeepCrossWhileAiming { get => PlayerPrefs.GetInt(KeepCrossKey,0)==1; set {PlayerPrefs.SetInt(KeepCrossKey,value?1:0);PlayerPrefs.Save();} }
  }
 }

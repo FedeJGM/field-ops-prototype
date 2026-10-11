@@ -15,6 +15,12 @@ namespace FieldOps {
  public static class GameText {
   public static string Get(string key,bool spanish) {
    switch(key) {
+    case "editLayout": return spanish?"EDITAR BOTONES":"EDIT LAYOUT";
+    case "save": return spanish?"GUARDAR":"SAVE";
+    case "resetLayout": return spanish?"RESTABLECER":"RESET";
+    case "cancel": return spanish?"CANCELAR":"CANCEL";
+    case "layoutHint": return spanish?"Arrastra los botones adonde quieras.":"Drag the buttons where you want them.";
+    case "layoutOverlap": return spanish?"Los botones se superponen o tapan un bot\u00f3n del men\u00fa. Sep\u00e1ralos.":"Buttons overlap or cover a menu button. Move them apart.";
     case "aim": return spanish?"APUNTAR":"AIM";
     case "settings": return spanish?"AJUSTES":"SETTINGS";
     case "aimMode": return spanish?"MODO DE APUNTADO":"ADS MODE";

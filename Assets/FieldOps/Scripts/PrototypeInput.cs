@@ -26,9 +26,14 @@ namespace FieldOps {
   void OnApplicationFocus(bool focus) { if(!focus)Clear(); }
   public void ClearGameplay() {Clear();requireMouseRelease=true;Cursor.lockState=CursorLockMode.None;Cursor.visible=true;}
   void Clear() { roles.Clear();moveFinger=lookFinger=-1;Move=Look=Vector2.zero;Fire=Sprint=false;if(hud!=null)hud.ResetStick(); }
+  // While the layout editor is open, touches and the mouse drag the HUD buttons instead of playing.
+  void ForwardLayoutPointers() {
+   foreach(var touch in Touch.activeTouches)hud.LayoutPointer(touch.finger.index,touch.phase==UnityEngine.InputSystem.TouchPhase.Began,touch.phase==UnityEngine.InputSystem.TouchPhase.Ended||touch.phase==UnityEngine.InputSystem.TouchPhase.Canceled,touch.screenPosition);
+   var mouse=Mouse.current;if(!Application.isMobilePlatform&&mouse!=null)hud.LayoutPointer(-1,mouse.leftButton.wasPressedThisFrame,mouse.leftButton.wasReleasedThisFrame,mouse.position.ReadValue());
+  }
   void Update() {
    Move=Look=Vector2.zero;Fire=Sprint=Reload=AimHeld=AimPressed=false;
-   if(!session.GameplayEnabled) {Clear();Cursor.lockState=CursorLockMode.None;Cursor.visible=true;hud.ShowButtons(false,false);return;}
+   if(!session.GameplayEnabled) {Clear();Cursor.lockState=CursorLockMode.None;Cursor.visible=true;hud.ShowButtons(false,false);if(hud.EditingLayout)ForwardLayoutPointers();return;}
    foreach(var touch in Touch.activeTouches) {
     int id=touch.finger.index;
     if(touch.phase==UnityEngine.InputSystem.TouchPhase.Began) {

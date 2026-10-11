@@ -11,7 +11,7 @@ namespace FieldOps.Tests {
  public class RuntimeSmokeTests {
   TrainingSession session; PrototypeInput input; FirstPersonMotor motor; TrainingTarget target; PrototypeHud hud; Touchscreen screen;
   [UnitySetUp] public IEnumerator LoadScene() {
-   PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");
+   PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");
    yield return SceneManager.LoadSceneAsync("TrainingRange");
    yield return null; yield return null;
    input=Object.FindFirstObjectByType<PrototypeInput>();motor=Object.FindFirstObjectByType<FirstPersonMotor>();target=Object.FindFirstObjectByType<TrainingTarget>();hud=Object.FindFirstObjectByType<PrototypeHud>();
@@ -22,7 +22,7 @@ namespace FieldOps.Tests {
    session=Object.FindFirstObjectByType<TrainingSession>();session.SetPause(false);session.SetFocus(true);
    screen=InputSystem.AddDevice<Touchscreen>();InputSystem.EnableDevice(screen);Canvas.ForceUpdateCanvases();
   }
-  [UnityTearDown] public IEnumerator Cleanup() {InputSystem.RemoveDevice(screen);PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");yield return null;}
+  [UnityTearDown] public IEnumerator Cleanup() {InputSystem.RemoveDevice(screen);PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");yield return null;}
   Vector2 Point(RectTransform rect) {return RectTransformUtility.WorldToScreenPoint(null,rect.position);}
   void Touch(int id,UnityEngine.InputSystem.TouchPhase phase,Vector2 point) {InputSystem.QueueStateEvent(screen,new TouchState {touchId=id,phase=phase,position=point});}
   [UnityTest] public IEnumerator SceneRendersWithConfiguredRuntimeObjects() {
@@ -151,6 +151,56 @@ namespace FieldOps.Tests {
   [UnityTest] public IEnumerator MenusAndSettingsAreSilent() {
    var rifle=hud.rifle;var sfx=rifle.sfx;var fire=Point(hud.fire);Touch(26,UnityEngine.InputSystem.TouchPhase.Began,fire);yield return new WaitForSeconds(.3f);Touch(26,UnityEngine.InputSystem.TouchPhase.Ended,fire);yield return null;
    yield return Tap(27,hud.reload);foreach(Sfx s in System.Enum.GetValues(typeof(Sfx)))Assert.AreEqual(0,sfx.Count(s),s.ToString());
+  }
+  IEnumerator Drag(int id,Vector2 from,Vector2 to) {
+   Touch(id,UnityEngine.InputSystem.TouchPhase.Began,from);yield return null;yield return null;Touch(id,UnityEngine.InputSystem.TouchPhase.Moved,Vector2.Lerp(from,to,.5f));yield return null;Touch(id,UnityEngine.InputSystem.TouchPhase.Moved,to);yield return null;yield return null;Touch(id,UnityEngine.InputSystem.TouchPhase.Ended,to);yield return null;yield return null;
+  }
+  IEnumerator OpenLayoutEditor() {hud.settingsButton.onClick.Invoke();yield return null;hud.editLayoutButton.onClick.Invoke();yield return null;Canvas.ForceUpdateCanvases();}
+  float CanvasScale() {return hud.GetComponent<Canvas>().scaleFactor;}
+  [UnityTest] public IEnumerator DraggingAButtonMovesItAndOnlyItsNewSpotFires() {
+   var defaultPosition=hud.fire.anchoredPosition;yield return OpenLayoutEditor();
+   Assert.IsTrue(hud.EditingLayout);Assert.IsTrue(hud.layoutPanel.activeSelf);Assert.IsFalse(hud.settingsPanel.activeSelf);Assert.IsTrue(hud.fire.gameObject.activeInHierarchy,"Buttons show while editing, even from the menu.");Assert.IsFalse(hud.menuBlocker.activeSelf);Assert.IsFalse(hud.configurationPanel.activeSelf);
+   var oldPoint=Point(hud.fire);yield return Drag(30,oldPoint,oldPoint+new Vector2(-600,250)*CanvasScale());
+   var moved=hud.fire.anchoredPosition-defaultPosition;Assert.AreEqual(-600,moved.x,3f);Assert.AreEqual(250,moved.y,3f);
+   hud.saveLayoutButton.onClick.Invoke();yield return null;Assert.IsFalse(hud.EditingLayout);Assert.IsFalse(hud.layoutPanel.activeSelf);Assert.IsTrue(hud.menuBlocker.activeSelf,"The configuration menu returns after editing.");
+   Assert.IsTrue(session.StartRound("60"));yield return null;var newPoint=Point(hud.fire);Touch(31,UnityEngine.InputSystem.TouchPhase.Began,newPoint);yield return null;yield return null;Assert.IsTrue(input.Fire,"The new spot must fire.");Touch(31,UnityEngine.InputSystem.TouchPhase.Ended,newPoint);yield return null;yield return null;
+   Touch(32,UnityEngine.InputSystem.TouchPhase.Began,oldPoint);yield return null;yield return null;Assert.IsFalse(input.Fire,"The old spot must no longer fire.");Touch(32,UnityEngine.InputSystem.TouchPhase.Ended,oldPoint);yield return null;
+  }
+  [UnityTest] public IEnumerator SavedLayoutSurvivesAReloadOfTheScene() {
+   yield return OpenLayoutEditor();var oldPoint=Point(hud.reload);yield return Drag(33,oldPoint,oldPoint+new Vector2(-500,200)*CanvasScale());var saved=hud.reload.anchoredPosition;hud.saveLayoutButton.onClick.Invoke();yield return null;Assert.IsTrue(PlayerPrefs.HasKey("hudLayout"));
+   yield return SceneManager.LoadSceneAsync("TrainingRange");yield return null;yield return null;var reloaded=Object.FindFirstObjectByType<PrototypeHud>();Canvas.ForceUpdateCanvases();
+   Assert.AreEqual(saved.x,reloaded.reload.anchoredPosition.x,.5f);Assert.AreEqual(saved.y,reloaded.reload.anchoredPosition.y,.5f);Assert.AreEqual(new Vector2(-160,170),reloaded.fire.anchoredPosition,"Untouched buttons keep their default place.");
+  }
+  [UnityTest] public IEnumerator CancelDiscardsEditsAndStoresNothing() {
+   var defaultPosition=hud.sprint.anchoredPosition;yield return OpenLayoutEditor();var from=Point(hud.sprint);yield return Drag(34,from,from+new Vector2(-400,300)*CanvasScale());Assert.AreNotEqual(defaultPosition,hud.sprint.anchoredPosition);
+   hud.cancelLayoutButton.onClick.Invoke();yield return null;Assert.IsFalse(hud.EditingLayout);Assert.AreEqual(defaultPosition.x,hud.sprint.anchoredPosition.x,.01f);Assert.AreEqual(defaultPosition.y,hud.sprint.anchoredPosition.y,.01f);Assert.IsFalse(PlayerPrefs.HasKey("hudLayout"));
+  }
+  [UnityTest] public IEnumerator ResetThenSaveRestoresDefaultsAndClearsTheStoredLayout() {
+   var defaultPosition=hud.aim.anchoredPosition;yield return OpenLayoutEditor();var from=Point(hud.aim);yield return Drag(35,from,from+new Vector2(-500,250)*CanvasScale());hud.saveLayoutButton.onClick.Invoke();yield return null;Assert.IsTrue(PlayerPrefs.HasKey("hudLayout"));
+   yield return OpenLayoutEditor();hud.resetLayoutButton.onClick.Invoke();yield return null;hud.saveLayoutButton.onClick.Invoke();yield return null;
+   Assert.AreEqual(defaultPosition.x,hud.aim.anchoredPosition.x,.01f);Assert.AreEqual(defaultPosition.y,hud.aim.anchoredPosition.y,.01f);Assert.IsFalse(PlayerPrefs.HasKey("hudLayout"),"A layout equal to the defaults stores nothing.");
+  }
+  [UnityTest] public IEnumerator OverlappingButtonsBlockSavingUntilSeparated() {
+   yield return OpenLayoutEditor();var aim=Point(hud.aim);var fire=Point(hud.fire);yield return Drag(36,aim,fire);
+   Assert.IsFalse(hud.saveLayoutButton.interactable);Assert.AreEqual(GameText.Get("layoutOverlap",false),hud.layoutHint.text);hud.saveLayoutButton.onClick.Invoke();yield return null;Assert.IsTrue(hud.EditingLayout,"Saving must be refused while buttons overlap.");Assert.IsFalse(PlayerPrefs.HasKey("hudLayout"));
+   var stuck=Point(hud.aim);yield return Drag(37,stuck,stuck+new Vector2(-500,200)*CanvasScale());Assert.IsTrue(hud.saveLayoutButton.interactable);Assert.AreEqual(GameText.Get("layoutHint",false),hud.layoutHint.text);
+   hud.cancelLayoutButton.onClick.Invoke();yield return null;
+  }
+  [UnityTest] public IEnumerator ButtonsCannotBeDraggedOutsideTheScreen() {
+   yield return OpenLayoutEditor();var from=Point(hud.fire);yield return Drag(38,from,from+new Vector2(5000,5000));
+   var corners=new Vector3[4];hud.fire.GetWorldCorners(corners);foreach(var c in corners){Assert.GreaterOrEqual(c.x,-.5f);Assert.LessOrEqual(c.x,Screen.width+.5f);Assert.GreaterOrEqual(c.y,-.5f);Assert.LessOrEqual(c.y,Screen.height+.5f);}
+   hud.cancelLayoutButton.onClick.Invoke();yield return null;
+  }
+  [UnityTest] public IEnumerator CorruptStoredLayoutFallsBackToTheDefaultPlaces() {
+   PlayerPrefs.SetString("hudLayout","garbage{{");yield return SceneManager.LoadSceneAsync("TrainingRange");yield return null;yield return null;var reloaded=Object.FindFirstObjectByType<PrototypeHud>();Canvas.ForceUpdateCanvases();
+   Assert.AreEqual(new Vector2(-160,170),reloaded.fire.anchoredPosition);Assert.AreEqual(new Vector2(175,165),reloaded.joystick.anchoredPosition);
+  }
+  [UnityTest] public IEnumerator EditingKeepsTheRoundPausedAndResumesAfterwards() {
+   Assert.IsTrue(session.StartRound("60"));yield return null;yield return OpenLayoutEditor();Assert.IsTrue(session.Round.Suspended);double remaining=session.Round.RemainingSeconds;yield return new WaitForSeconds(.3f);Assert.AreEqual(remaining,session.Round.RemainingSeconds);
+   hud.cancelLayoutButton.onClick.Invoke();yield return new WaitForSeconds(.2f);Assert.IsFalse(session.Round.Suspended);Assert.IsFalse(session.SettingsOpen);Assert.Less(session.Round.RemainingSeconds,remaining);
+  }
+  [UnityTest] public IEnumerator DefaultButtonPlacesDoNotOverlapEachOtherOrTheFixedMenuButtons() {
+   yield return OpenLayoutEditor();Assert.IsTrue(hud.saveLayoutButton.interactable,"The default layout must be saveable.");Assert.AreEqual(GameText.Get("layoutHint",false),hud.layoutHint.text);yield return CapturePreview("hud-edit-preview.bmp");hud.languageButton.onClick.Invoke();yield return null;yield return CapturePreview("hud-edit-preview-es.bmp");hud.languageButton.onClick.Invoke();hud.cancelLayoutButton.onClick.Invoke();yield return null;
   }
   IEnumerator CapturePreview(string fileName) {
    if(SystemInfo.graphicsDeviceType!=UnityEngine.Rendering.GraphicsDeviceType.Null) {
