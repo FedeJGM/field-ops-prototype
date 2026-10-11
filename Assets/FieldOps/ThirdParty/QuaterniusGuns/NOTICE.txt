@@ -1,0 +1,8 @@
+Ultimate Gun Pack by Quaternius (July 2019)
+Author: Quaternius
+Source: https://opengameart.org/content/low-poly-guns-pack
+Also published at: https://quaternius.itch.io/50-lowpoly-guns
+License: CC0 1.0 Universal (public domain dedication), as stated on the OpenGameArt page when downloaded on 2026-10-11.
+The downloaded archive did not include a separate license file.
+Files used here (unmodified FBX models): Pistol_1.fbx, AssaultRifle_2.fbx, SubmachineGun_1.fbx, Shotgun_4.fbx, SniperRifle_4.fbx
+Attribution is not required by CC0; it is given here as a courtesy and for traceability.

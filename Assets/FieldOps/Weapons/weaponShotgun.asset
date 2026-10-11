@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c469fda2a65938143b4a1895cc9d3a77, type: 3}
+  m_Name: weaponShotgun
+  m_EditorClassIdentifier: 
+  nameKey: weaponShotgun
+  modelPrefab: {fileID: 919132149155446097, guid: bdb05352c6927704fbafd778a6912c22, type: 3}
+  modelLength: 1.05
+  muzzleLocal: {x: 0, y: 0.032145835, z: 0.55499995}
+  aimOffset: {x: -0.28, y: 0.075706005, z: 0.44499996}
+  magazineSize: 6
+  fireInterval: 0.85
+  damage: 15
+  pellets: 8
+  spreadDegrees: 4
+  range: 40
+  reloadSeconds: 1.5
+  kick: 0.12
+  aimFov: 50

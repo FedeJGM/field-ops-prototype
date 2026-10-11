@@ -5,11 +5,12 @@ namespace FieldOps {
   public const float ZoomedFov=40f;
   public const float SensitivityWhileAiming=.5f;
   public const double BlendSeconds=.15;
+  public float ZoomFov { get; set; }=ZoomedFov;
   public bool Toggle { get; set; }
   public bool Aiming { get; private set; }
   public float Blend { get; private set; }
   public float LookScale => 1f+(SensitivityWhileAiming-1f)*Blend;
-  public float Fov(float normalFov) { return normalFov+(ZoomedFov-normalFov)*Blend; }
+  public float Fov(float normalFov) { return normalFov+(ZoomFov-normalFov)*Blend; }
   public void Step(bool held,bool pressed,bool sprinting,bool allowed,double seconds) {
    if(!allowed||sprinting)Aiming=false;
    else if(Toggle) {if(pressed)Aiming=!Aiming;}

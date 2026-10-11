@@ -11,7 +11,7 @@ namespace FieldOps.Tests {
  public class RuntimeSmokeTests {
   TrainingSession session; PrototypeInput input; FirstPersonMotor motor; TrainingTarget target; PrototypeHud hud; Touchscreen screen;
   [UnitySetUp] public IEnumerator LoadScene() {
-   PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");
+   PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");PlayerPrefs.DeleteKey("weapon");
    yield return SceneManager.LoadSceneAsync("TrainingRange");
    yield return null; yield return null;
    input=Object.FindFirstObjectByType<PrototypeInput>();motor=Object.FindFirstObjectByType<FirstPersonMotor>();target=Object.FindFirstObjectByType<TrainingTarget>();hud=Object.FindFirstObjectByType<PrototypeHud>();
@@ -22,7 +22,7 @@ namespace FieldOps.Tests {
    session=Object.FindFirstObjectByType<TrainingSession>();session.SetPause(false);session.SetFocus(true);
    screen=InputSystem.AddDevice<Touchscreen>();InputSystem.EnableDevice(screen);Canvas.ForceUpdateCanvases();
   }
-  [UnityTearDown] public IEnumerator Cleanup() {InputSystem.RemoveDevice(screen);PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");yield return null;}
+  [UnityTearDown] public IEnumerator Cleanup() {InputSystem.RemoveDevice(screen);PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");PlayerPrefs.DeleteKey("weapon");yield return null;}
   Vector2 Point(RectTransform rect) {return RectTransformUtility.WorldToScreenPoint(null,rect.position);}
   void Touch(int id,UnityEngine.InputSystem.TouchPhase phase,Vector2 point) {InputSystem.QueueStateEvent(screen,new TouchState {touchId=id,phase=phase,position=point});}
   [UnityTest] public IEnumerator SceneRendersWithConfiguredRuntimeObjects() {
@@ -201,6 +201,73 @@ namespace FieldOps.Tests {
   }
   [UnityTest] public IEnumerator DefaultButtonPlacesDoNotOverlapEachOtherOrTheFixedMenuButtons() {
    yield return OpenLayoutEditor();Assert.IsTrue(hud.saveLayoutButton.interactable,"The default layout must be saveable.");Assert.AreEqual(GameText.Get("layoutHint",false),hud.layoutHint.text);yield return CapturePreview("hud-edit-preview.bmp");hud.languageButton.onClick.Invoke();yield return null;yield return CapturePreview("hud-edit-preview-es.bmp");hud.languageButton.onClick.Invoke();hud.cancelLayoutButton.onClick.Invoke();yield return null;
+  }
+  IEnumerator SelectWeapon(int index) {var rifle=hud.rifle;while(rifle.CurrentIndex!=index){hud.weaponNextButton.onClick.Invoke();yield return null;}}
+  IEnumerator HoldFire(int id,float seconds) {var fire=Point(hud.fire);Touch(id,UnityEngine.InputSystem.TouchPhase.Began,fire);yield return new WaitForSeconds(seconds);Touch(id,UnityEngine.InputSystem.TouchPhase.Ended,fire);yield return null;yield return null;}
+  IEnumerator FinishRound() {session.Round.Tick(60);yield return null;yield return null;session.Configure();yield return null;}
+  void AimAtTarget() {Camera.main.transform.LookAt(target.transform.position+Vector3.up*1.25f);}
+  [UnityTest] public IEnumerator ConfigurationMenuShowsTheSelectedWeaponAndCyclesThroughAllFive() {
+   var rifle=hud.rifle;Assert.AreEqual(5,rifle.weapons.Length);Assert.AreEqual(1,rifle.CurrentIndex);string Name(int i) {return GameText.Get(rifle.weapons[i].nameKey,false);}
+   Assert.AreEqual(Name(1),hud.weaponNameLabel.text);
+   foreach(int idx in new[]{2,3,4,0,1}) {hud.weaponNextButton.onClick.Invoke();yield return null;Assert.AreEqual(idx,rifle.CurrentIndex);Assert.AreEqual(Name(idx),hud.weaponNameLabel.text);Assert.AreEqual(idx,GameSettings.SelectedWeapon);for(int m=0;m<rifle.models.Length;m++)Assert.AreEqual(m==idx,rifle.models[m].gameObject.activeSelf,"model "+m+" for weapon "+idx);}
+   hud.weaponPrevButton.onClick.Invoke();yield return null;Assert.AreEqual(0,rifle.CurrentIndex);hud.weaponPrevButton.onClick.Invoke();yield return null;Assert.AreEqual(4,rifle.CurrentIndex,"Previous wraps to the last weapon.");
+   hud.languageButton.onClick.Invoke();yield return null;Assert.AreEqual(GameText.Get(rifle.weapons[4].nameKey,true),hud.weaponNameLabel.text);
+  }
+  [UnityTest] public IEnumerator EachWeaponAppliesItsOwnStatsAndShowsThemInTheMenu() {
+   var rifle=hud.rifle;for(int i=0;i<rifle.weapons.Length;i++) {
+    var def=rifle.weapons[i];yield return SelectWeapon(i);StringAssert.Contains(def.magazineSize.ToString(),hud.weaponStatsLabel.text);StringAssert.Contains(def.damage.ToString(),hud.weaponStatsLabel.text);
+    Assert.IsTrue(session.StartRound("60"));yield return null;Assert.AreSame(def,rifle.Current);Assert.AreEqual(def.magazineSize,rifle.Ammo.Capacity);Assert.AreEqual(def.magazineSize,rifle.Ammo.Count);Assert.AreEqual(def.aimFov,rifle.Aim.ZoomFov,.001f);Assert.IsTrue(hud.ammoLabel.text.Contains(def.magazineSize.ToString()));
+    yield return FinishRound();
+   }
+  }
+  [UnityTest] public IEnumerator FireRateDiffersPerWeapon() {
+   var rifle=hud.rifle;motor.enabled=false;yield return SelectWeapon(0);Assert.IsTrue(session.StartRound("60"));yield return null;AimAtTarget();yield return HoldFire(40,.7f);int pistol=rifle.Ammo.Capacity-rifle.Ammo.Count;Assert.That(pistol,Is.InRange(2,3),"Pistol: one shot per 0.30 s.");
+   yield return FinishRound();yield return SelectWeapon(2);Assert.IsTrue(session.StartRound("60"));yield return null;AimAtTarget();yield return HoldFire(41,.7f);int smg=rifle.Ammo.Capacity-rifle.Ammo.Count;Assert.GreaterOrEqual(smg,8,"Sub-machine gun: one shot per 0.07 s.");Assert.Greater(smg,pistol*2);
+  }
+  [UnityTest] public IEnumerator SniperDealsHeavyDamageWithOneShot() {
+   var rifle=hud.rifle;motor.enabled=false;yield return SelectWeapon(4);Assert.IsTrue(session.StartRound("60"));yield return null;AimAtTarget();yield return HoldFire(42,.4f);
+   Assert.AreEqual(4,rifle.Ammo.Count);Assert.AreEqual(1,session.Round.Score);Assert.AreEqual(1,target.Damage.Hits);Assert.AreEqual(100,target.Damage.TotalDamage);
+  }
+  [UnityTest] public IEnumerator ShotgunFiresPelletsButScoresOncePerShot() {
+   var rifle=hud.rifle;motor.enabled=false;yield return SelectWeapon(3);Assert.IsTrue(session.StartRound("60"));yield return null;
+   var controller=motor.GetComponent<CharacterController>();controller.enabled=false;motor.transform.position=new Vector3(0,.06f,-1);controller.enabled=true;AimAtTarget();yield return null;
+   yield return HoldFire(43,.3f);Assert.AreEqual(5,rifle.Ammo.Count,"One trigger pull uses one shell.");Assert.AreEqual(1,session.Round.Score,"One point per shot that hits, however many pellets land.");Assert.GreaterOrEqual(target.Damage.Hits,3,"Several pellets hit at close range.");Assert.AreEqual(target.Damage.Hits*15,target.Damage.TotalDamage);
+  }
+  [UnityTest] public IEnumerator EachWeaponHasItsOwnAimZoom() {
+   var cam=Camera.main;motor.enabled=false;float[] zoom=new float[2];int slot=0;
+   foreach(int weapon in new[]{0,4}) {
+    yield return SelectWeapon(weapon);Assert.IsTrue(session.StartRound("60"));yield return null;var aim=Point(hud.aim);Touch(44+slot,UnityEngine.InputSystem.TouchPhase.Began,aim);yield return new WaitForSeconds(.4f);zoom[slot]=cam.fieldOfView;Touch(44+slot,UnityEngine.InputSystem.TouchPhase.Ended,aim);yield return null;yield return null;slot++;yield return FinishRound();
+   }
+   Assert.AreEqual(50f,zoom[0],.5f);Assert.AreEqual(20f,zoom[1],.5f);Assert.Less(zoom[1],zoom[0]);
+  }
+  [UnityTest] public IEnumerator WeaponChoiceSurvivesAReloadOfTheScene() {
+   yield return SelectWeapon(3);Assert.AreEqual(3,GameSettings.SelectedWeapon);
+   yield return SceneManager.LoadSceneAsync("TrainingRange");yield return null;yield return null;var reloaded=Object.FindFirstObjectByType<PrototypeHud>();Assert.AreEqual(3,reloaded.rifle.CurrentIndex);Assert.AreEqual(GameText.Get("weaponShotgun",false),reloaded.weaponNameLabel.text);
+  }
+  [UnityTest] public IEnumerator WeaponShowcaseCapturesHipAndAimViews() {
+   var rifle=hud.rifle;motor.enabled=false;for(int i=0;i<rifle.weapons.Length;i++) {
+    yield return SelectWeapon(i);Assert.IsTrue(session.StartRound("60"));yield return null;AimAtTarget();yield return new WaitForSeconds(.2f);yield return CapturePreview("weapon-"+i+"-hip.bmp");yield return null;Canvas.ForceUpdateCanvases();
+    var aim=Point(hud.aim);Touch(50+i,UnityEngine.InputSystem.TouchPhase.Began,aim);yield return new WaitForSeconds(.5f);Assert.IsTrue(rifle.Aim.Aiming,"weapon "+i+" must be aiming: input.AimHeld="+input.AimHeld+" gameplay="+session.GameplayEnabled);Assert.AreEqual(rifle.weapons[i].aimFov,Camera.main.fieldOfView,.5f,"weapon "+i);yield return CapturePreview("weapon-"+i+"-aim.bmp");Touch(50+i,UnityEngine.InputSystem.TouchPhase.Ended,aim);yield return null;yield return null;yield return FinishRound();
+   }
+  }
+  [UnityTest] public IEnumerator WeaponCanBeChangedOnTheResultsScreenAndTheNextRoundUsesIt() {
+   var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;session.Round.Tick(60);yield return null;yield return null;
+   Assert.AreEqual(RoundPhase.Results,session.Round.Phase);Assert.IsTrue(hud.resultsPanel.activeInHierarchy);Assert.AreEqual(GameText.Get("weaponRifle",false),hud.resultsWeapon.name.text);Assert.IsTrue(hud.resultsWeapon.next.interactable);
+   hud.resultsWeapon.next.onClick.Invoke();yield return null;Assert.AreEqual(2,rifle.CurrentIndex);Assert.AreEqual(GameText.Get("weaponSmg",false),hud.resultsWeapon.name.text);StringAssert.Contains("32",hud.resultsWeapon.stats.text);
+   hud.replayButton.onClick.Invoke();yield return null;Assert.AreEqual(RoundPhase.Active,session.Round.Phase);Assert.AreSame(rifle.weapons[2],rifle.Current);Assert.AreEqual(32,rifle.Ammo.Capacity);
+  }
+  [UnityTest] public IEnumerator WeaponCanBeChangedFromSettingsWhileInTheMenus() {
+   var rifle=hud.rifle;hud.settingsButton.onClick.Invoke();yield return null;Assert.IsTrue(hud.settingsPanel.activeSelf);Assert.AreEqual(GameText.Get("weaponRifle",false),hud.settingsWeapon.name.text);Assert.IsTrue(hud.settingsWeapon.prev.interactable);
+   hud.settingsWeapon.prev.onClick.Invoke();yield return null;Assert.AreEqual(0,rifle.CurrentIndex);Assert.AreEqual(GameText.Get("weaponPistol",false),hud.settingsWeapon.name.text);Assert.AreEqual(GameText.Get("weaponPistol",false),hud.weaponNameLabel.text,"All selectors show the same weapon.");Assert.AreEqual(0,GameSettings.SelectedWeapon);
+   hud.closeSettingsButton.onClick.Invoke();yield return null;Assert.IsTrue(session.StartRound("60"));yield return null;Assert.AreEqual(12,rifle.Ammo.Capacity);
+  }
+  [UnityTest] public IEnumerator ChangingWeaponMidRoundResetsTheScoreAndGivesAFullMagazine() {
+   var rifle=hud.rifle;motor.enabled=false;Assert.IsTrue(session.StartRound("60"));yield return null;AimAtTarget();yield return HoldFire(60,.3f);
+   Assert.Greater(session.Round.Score,0);Assert.Greater(target.Damage.Hits,0);Assert.Less(rifle.Ammo.Count,30);
+   hud.settingsButton.onClick.Invoke();yield return null;Assert.IsTrue(hud.settingsWeapon.next.interactable,"Weapons can be swapped during a round.");double remaining=session.Round.RemainingSeconds;
+   hud.settingsWeapon.next.onClick.Invoke();yield return null;
+   Assert.AreEqual(2,rifle.CurrentIndex);Assert.AreEqual(RoundPhase.Active,session.Round.Phase);Assert.AreEqual(0,session.Round.Score);Assert.AreEqual(0,target.Damage.Hits);Assert.AreEqual(0,target.GetComponentsInChildren<Renderer>().Count(r=>r.name=="Bullet impact"));Assert.AreEqual(32,rifle.Ammo.Count);Assert.AreEqual(remaining,session.Round.RemainingSeconds,"The timer does not restart.");
+   hud.closeSettingsButton.onClick.Invoke();yield return null;yield return HoldFire(61,.3f);Assert.Greater(session.Round.Score,0,"The new weapon scores from zero.");Assert.Less(session.Round.RemainingSeconds,remaining);
   }
   IEnumerator CapturePreview(string fileName) {
    if(SystemInfo.graphicsDeviceType!=UnityEngine.Rendering.GraphicsDeviceType.Null) {

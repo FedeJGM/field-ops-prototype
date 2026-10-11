@@ -27,6 +27,8 @@ namespace FieldOps {
    return true;
   }
   public void Configure() {Round.Configure();ClearControls();}
+  // Swapping weapons mid-round restarts the score (and the target counters) but never the clock.
+  public void WeaponChanged() {if(Round.Phase!=RoundPhase.Active)return;Round.ResetScore();target.ResetDamage();}
   public bool TryRecordHit() {Synchronize();return Round.RecordHit();}
   void ClearControls() {if(input!=null)input.ClearGameplay();if(rifle!=null)rifle.ClearVisuals();}
   void OnApplicationPause(bool value) {SetPause(value);}

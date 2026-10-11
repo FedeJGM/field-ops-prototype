@@ -15,6 +15,11 @@ namespace FieldOps {
  public static class GameText {
   public static string Get(string key,bool spanish) {
    switch(key) {
+    case "weaponPistol": return spanish?"PISTOLA":"PISTOL";
+    case "weaponRifle": return spanish?"FUSIL DE ASALTO":"ASSAULT RIFLE";
+    case "weaponSmg": return spanish?"SUBFUSIL":"SMG";
+    case "weaponShotgun": return spanish?"ESCOPETA":"SHOTGUN";
+    case "weaponSniper": return spanish?"FRANCOTIRADOR":"SNIPER RIFLE";
     case "editLayout": return spanish?"EDITAR BOTONES":"EDIT LAYOUT";
     case "save": return spanish?"GUARDAR":"SAVE";
     case "resetLayout": return spanish?"RESTABLECER":"RESET";

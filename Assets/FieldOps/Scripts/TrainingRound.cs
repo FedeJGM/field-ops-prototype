@@ -25,6 +25,7 @@ namespace FieldOps {
   }
   public bool RecordHit() {if(Phase!=RoundPhase.Active||Suspended||RemainingSeconds<=0)return false;Score++;return true;}
   public void SetSuspended(bool value) {Suspended=value;}
+  public void ResetScore() {if(Phase==RoundPhase.Active)Score=0;}
   public void Configure() {if(Phase!=RoundPhase.Active)Phase=RoundPhase.Configuration;}
   public string Clock {get {int seconds=(int)Math.Ceiling(RemainingSeconds);return (seconds/60).ToString("00",CultureInfo.InvariantCulture)+":"+(seconds%60).ToString("00",CultureInfo.InvariantCulture);}}
  }

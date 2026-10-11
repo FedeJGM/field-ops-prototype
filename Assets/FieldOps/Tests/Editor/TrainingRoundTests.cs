@@ -14,5 +14,6 @@ namespace FieldOps.Tests {
   [Test] public void ResultsCanReturnToConfigurationAndRetainSelection() {var r=new TrainingRound();Assert.IsTrue(r.Start("2"));r.Tick(2);r.Configure();Assert.AreEqual(RoundPhase.Configuration,r.Phase);Assert.AreEqual(2,r.DurationSeconds);Assert.IsFalse(r.RecordHit());}
   [Test] public void ShotGateCanResetForAReplay() {var gate=new ShotGate(.12);Assert.IsTrue(gate.TryFire(10));Assert.IsFalse(gate.TryFire(10.01));gate.Reset();Assert.IsTrue(gate.TryFire(10.01));}
   [Test] public void InvalidElapsedValuesCannotIncreaseOrExpireTime() {var r=new TrainingRound();Assert.IsTrue(r.Start("60"));r.Tick(-1);r.Tick(double.NaN);r.Tick(double.PositiveInfinity);Assert.AreEqual(60,r.RemainingSeconds);}
+  [Test] public void ResetScoreClearsPointsOnlyWhileActiveAndKeepsTheClock() {var r=new TrainingRound();r.ResetScore();Assert.AreEqual(0,r.Score);Assert.IsTrue(r.Start("60"));r.Tick(10);Assert.IsTrue(r.RecordHit());Assert.IsTrue(r.RecordHit());Assert.AreEqual(2,r.Score);r.ResetScore();Assert.AreEqual(0,r.Score);Assert.AreEqual(50,r.RemainingSeconds,.001);Assert.AreEqual(RoundPhase.Active,r.Phase);Assert.IsTrue(r.RecordHit());r.Tick(50);Assert.AreEqual(RoundPhase.Results,r.Phase);Assert.AreEqual(1,r.Score);r.ResetScore();Assert.AreEqual(1,r.Score,"The final score of a finished round stays on the results screen."); }
  }
 }

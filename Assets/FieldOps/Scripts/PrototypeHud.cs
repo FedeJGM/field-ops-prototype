@@ -15,6 +15,9 @@ namespace FieldOps {
   public GameObject settingsPanel,aimDot;
   public Button editLayoutButton,saveLayoutButton,resetLayoutButton,cancelLayoutButton;
   public GameObject layoutPanel;public Text layoutHint;
+  public Text weaponNameLabel,weaponStatsLabel;public Button weaponPrevButton,weaponNextButton;
+  [System.Serializable] public sealed class WeaponSelectorUi {public Text name,stats;public Button prev,next;}
+  public WeaponSelectorUi resultsWeapon,settingsWeapon;
   public bool EditingLayout {get;private set;}
   Dictionary<string,RectTransform> movable;
   readonly Dictionary<string,Vector2> defaultPositions=new Dictionary<string,Vector2>();
@@ -33,7 +36,7 @@ namespace FieldOps {
    resetButton.gameObject.SetActive(false);durationInput.text=session.Round.DurationSeconds.ToString(CultureInfo.InvariantCulture);Refresh();UpdateSafeArea();
    movable=new Dictionary<string,RectTransform>{{"joystick",joystick},{"fire",fire},{"reload",reload},{"aim",aim},{"sprint",sprint}};
    foreach(var pair in movable)defaultPositions[pair.Key]=pair.Value.anchoredPosition;
-   editLayoutButton.onClick.AddListener(BeginEditLayout);saveLayoutButton.onClick.AddListener(()=>SaveLayout());resetLayoutButton.onClick.AddListener(ResetLayout);cancelLayoutButton.onClick.AddListener(CancelLayout);layoutPanel.SetActive(false);
+   editLayoutButton.onClick.AddListener(BeginEditLayout);saveLayoutButton.onClick.AddListener(()=>SaveLayout());foreach(var selector in Selectors()) {selector.prev.onClick.AddListener(()=>ChangeWeapon(-1));selector.next.onClick.AddListener(()=>ChangeWeapon(1));}resetLayoutButton.onClick.AddListener(ResetLayout);cancelLayoutButton.onClick.AddListener(CancelLayout);layoutPanel.SetActive(false);
    Canvas.ForceUpdateCanvases();ApplySavedLayout();
   }
   void Update() {UpdateSafeArea();RefreshRound();}
@@ -98,6 +101,22 @@ namespace FieldOps {
    if(ended)drags.Remove(id);
    RefreshLayoutState();
   }
+  WeaponSelectorUi configSelector;
+  // The same weapon choice is offered in the pre-round menu, on the results screen and in the settings menu.
+  IEnumerable<WeaponSelectorUi> Selectors() {
+   if(configSelector==null)configSelector=new WeaponSelectorUi{name=weaponNameLabel,stats=weaponStatsLabel,prev=weaponPrevButton,next=weaponNextButton};
+   yield return configSelector;if(resultsWeapon!=null&&resultsWeapon.next!=null)yield return resultsWeapon;if(settingsWeapon!=null&&settingsWeapon.next!=null)yield return settingsWeapon;
+  }
+  void ChangeWeapon(int delta) {
+   int count=rifle.weapons.Length,index=(rifle.CurrentIndex+delta+count)%count;
+   GameSettings.SelectedWeapon=index;rifle.Equip(index);session.WeaponChanged();Refresh();
+  }
+  void RefreshWeaponText() {
+   var def=rifle.Current;if(def==null)return;
+   string weaponName=GameText.Get(def.nameKey,spanish);
+   string stats=GameText.Get("ammo",spanish)+" "+def.magazineSize+"   |   "+GameText.Get("damage",spanish)+" "+def.damage+(def.pellets>1?" x"+def.pellets:"")+"   |   "+Mathf.RoundToInt(60f/def.fireInterval)+"/min";
+   foreach(var selector in Selectors()) {selector.name.text=weaponName;selector.stats.text=stats;}
+  }
   void OpenSettings() {settingsPanel.SetActive(true);session.SetSettingsOpen(true);Refresh();}
   void CloseSettings() {settingsPanel.SetActive(false);session.SetSettingsOpen(false);Refresh();}
   void ToggleAimMode() {GameSettings.AimToggle=!GameSettings.AimToggle;rifle.Aim.Toggle=GameSettings.AimToggle;rifle.Aim.Reset();Refresh();}
@@ -111,7 +130,7 @@ namespace FieldOps {
   void ToggleLanguage() {spanish=!spanish;PlayerPrefs.SetInt("language",spanish?1:0);Refresh();}
   void Refresh() {
    title.text="FIELD OPS / PROTOTYPE";moveLabel.text=GameText.Get("move",spanish);lookLabel.text=GameText.Get("look",spanish);fireLabel.text=GameText.Get("fire",spanish);sprintLabel.text=GameText.Get("sprint",spanish);resetLabel.text=GameText.Get("reset",spanish);help.text=GameText.Get("help",spanish);languageButton.GetComponentInChildren<Text>().text=spanish?"ENGLISH":"ESPAÑOL";
-   roundTitle.text=GameText.Get("roundTitle",spanish);durationLabel.text=GameText.Get("duration",spanish);scoreRule.text=GameText.Get("scoreRule",spanish);durationError.text=invalidDuration?GameText.Get("durationError",spanish):"";startButton.GetComponentInChildren<Text>().text=GameText.Get("start",spanish);replayButton.GetComponentInChildren<Text>().text=GameText.Get("replay",spanish);configureButton.GetComponentInChildren<Text>().text=GameText.Get("configure",spanish);resultTitle.text=GameText.Get("finished",spanish);reloadLabel.text=GameText.Get("reload",spanish);RefreshSettingsText();RefreshRound();
+   roundTitle.text=GameText.Get("roundTitle",spanish);durationLabel.text=GameText.Get("duration",spanish);scoreRule.text=GameText.Get("scoreRule",spanish);durationError.text=invalidDuration?GameText.Get("durationError",spanish):"";startButton.GetComponentInChildren<Text>().text=GameText.Get("start",spanish);replayButton.GetComponentInChildren<Text>().text=GameText.Get("replay",spanish);configureButton.GetComponentInChildren<Text>().text=GameText.Get("configure",spanish);resultTitle.text=GameText.Get("finished",spanish);reloadLabel.text=GameText.Get("reload",spanish);RefreshSettingsText();RefreshWeaponText();RefreshRound();
   }
   void RefreshRound() {
    bool active=session.Round.Phase==RoundPhase.Active;bool editing=EditingLayout,show=active||editing;bool aiming=active&&rifle.Aim.Aiming;crosshair.SetActive(active&&(!aiming||GameSettings.KeepCrossWhileAiming));aimDot.SetActive(aiming);aim.gameObject.SetActive(show);menuBlocker.SetActive(!active&&!editing);configurationPanel.SetActive(session.Round.Phase==RoundPhase.Configuration&&!editing);resultsPanel.SetActive(session.Round.Phase==RoundPhase.Results&&!editing);

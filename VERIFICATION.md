@@ -148,6 +148,43 @@ Observed by the assistant: the APK hash differs from the previous build, the pac
 
 Reported by the user after manual testing on the Motorola edge 60 fusion: **all checks passed as expected** (entering the editor from the menu and during a round, dragging, screen limits, overlap blocking, save and play, persistence after fully closing the app, cancel, reset, round pause, Spanish text fit). These are user-reported results; no screenshots of this build were captured, positions only (no button scaling) are supported, and no FPS/thermal benchmark is claimed. The tests drive input with queued touches, not physical fingers.
 
+## Five selectable weapons with imported models (2026-10-11)
+
+Second phase of the second round of features. The single rifle was replaced by five weapons selected from the pre-round menu, the results screen and the settings menu. The player can swap weapons during a round; the score and the target's damage counters and impact marks restart, the new weapon starts with a full magazine, and the clock is not reset (user decision). Weapon names are generic. Models are five unmodified FBX files from the Quaternius "Ultimate Gun Pack" (CC0 according to its OpenGameArt page, downloaded 2026-10-11; the archive contained no separate license file), with `NOTICE.txt` next to them and an entry in `CREDITS.md`. The assistant checked license statements on the source pages; they were summarized by a tool, not read verbatim from legal text.
+
+| Weapon (model) | Magazine | Fire interval | Damage | Aim zoom | Range |
+|---|---|---|---|---|---|
+| Pistol (Pistol_1) | 12 | 0.30 s | 20 | 50 deg | 60 |
+| Assault rifle (AssaultRifle_2, default) | 30 | 0.12 s | 25 | 40 deg | 80 |
+| Sub-machine gun (SubmachineGun_1) | 32 | 0.07 s | 15 | 45 deg | 60 |
+| Shotgun (Shotgun_4) | 6 | 0.85 s | 15 x 8 pellets (4 deg ring) | 50 deg | 40 |
+| Sniper rifle (SniperRifle_4) | 5 | 1.20 s | 100 | 20 deg | 120 |
+
+All weapons keep the 1.5 s reload until per-weapon audio defines it. The shotgun pellet pattern is deterministic (`PelletPattern`); one point is scored per trigger pull that hits. The scene generator creates the `WeaponDefinition` assets, instantiates the models under the weapon holder (Ignore Raycast layer, no colliders, no shadows), fits each to a first-person length and computes the aiming pose from the model size.
+
+| Evidence | Result | Scope |
+|---|---|---|
+| Strict RED, `Logs/weapon-red-edit.xml` / `weapon-red-play.xml` | EditMode 19 failed / PlayMode 8 failed | Pellet pattern, per-weapon zoom, weapon settings, catalog, models and selector UI, stats, fire rate, shotgun scoring, persistence |
+| Strict RED, `Logs/fix-red-edit.xml` / `fix-red-play.xml` | EditMode 2 failed / PlayMode 3 failed | Upright, forward-facing models; selectors on the results screen and in settings |
+| Strict RED, `Logs/mid-red-edit.xml` / `mid-red-play.xml` | EditMode 1 failed / PlayMode 1 failed | Score reset rule and mid-round weapon change |
+| Final EditMode, `Logs/mid-green-edit.xml` | **139 passed, 0 failed** | Adds weapon catalog and stats, model sizes, orientation, credits and notice, aim pose, pellet pattern, weapon settings, per-weapon zoom, score reset rule |
+| Final PlayMode, `Logs/mid-green-play.xml` | **44 passed, 0 failed** | Adds: selector cycling and wrap-around; per-weapon stats in the menu and in play; fire rates; sniper damage; shotgun pellets and one point per shot; per-weapon zoom; persistence across a scene reload; weapon change on the results screen and in settings; mid-round change resets the score and keeps the clock |
+| Editor render previews | Visually checked | Each weapon in hip and aiming views (`Logs/weapon-previews/`), configuration, results and settings menus |
+| Android build | Build succeeded | Same Unity 6000.0.70f1 route, ARM64 IL2CPP, GLES3 |
+
+Defects found by the previews and the user's device test, all fixed with a failing test first where applicable:
+- The generator overwrote the model's import scale (100) and import rotation (270 degrees about X), first making the guns 100 times too small and then laying them on their side. The generator now multiplies the scale and composes the rotation; a test checks that the gun's up axis points up and its muzzle points forward.
+- Unity mirrors the X axis on FBX import, so the first +90/-90 choice pointed the muzzle at the camera; checked in the aiming previews.
+- The first aiming pose left the gun glued to the lens or off-screen; the pose is now computed from each model (top edge just under the eye line, rear end 38 cm from the camera).
+- The weapon selector initially existed only in the pre-round menu; it was added to the results screen and the settings menu after the first device test, and mid-round swapping was allowed after the user asked for it.
+- A first showcase test tapped the AIM button using stale canvas coordinates right after a preview capture; the harness now refreshes the canvas first. This was a test problem, not a product defect.
+
+APK: 41,551,894 bytes; SHA-256 `CA8026D9049B95A99943BBF31C0C61C908662D1D88A67CBD12C838267419F9C5`. Saved scene on disk: SHA-256 `B80F82FAA59A3F442EE4C487034C306DDD64260A8474373B0DCEDE901C89C090`.
+
+Observed by the assistant: each APK hash differed from the previous build, the packaged scene contained the five weapon objects and three weapon selectors, `adb install -r` succeeded without uninstalling, the activity was the top resumed activity, and logcat showed no `NullReference`, fatal or Unity exceptions.
+
+Reported by the user after manual testing on the Motorola edge 60 fusion: **all checks passed as expected** on the final APK (upright, forward-facing weapons in all five cases, selectors in the pre-round menu, results screen and settings, mid-round swap with score reset, persistence, per-weapon feel). These are user-reported results; no screenshots of the final device build were captured and no FPS/thermal benchmark is claimed. The look is a stylized low-poly interpretation, not a reproduction of any commercial game, and the models have no iron sights. Sound is still shared by all weapons.
+
 ## Historical first-delivery evidence (before timed rounds)
 
 The earlier free-practice prototype passed **11 EditMode / 5 PlayMode** tests and built/installed/launched on a Motorola edge 60 fusion running Android 16. The user reported physical move/look/sprint/fire/marks/reset/language checks passing. The public screenshot is from that earlier delivery.
