@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   nameKey: weaponSmg
   modelPrefab: {fileID: 919132149155446097, guid: 74190ffffc093a84c82411d5692c96c3, type: 3}
+  shotClip: {fileID: 8300000, guid: 32ce76e52b2710c4c8c5e26eaaf3ab4e, type: 3}
+  reloadClip: {fileID: 8300000, guid: a06e25fe2cd9cee4db426f491b81d387, type: 3}
   modelLength: 0.55
   muzzleLocal: {x: 0, y: 0.061036162, z: 0.305}
   aimOffset: {x: -0.28, y: -0.004544899, z: 0.195}
@@ -23,6 +25,6 @@ MonoBehaviour:
   pellets: 1
   spreadDegrees: 0
   range: 60
-  reloadSeconds: 1.5
+  reloadSeconds: 1.3890476
   kick: 0.03
   aimFov: 45

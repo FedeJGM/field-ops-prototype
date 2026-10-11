@@ -11,7 +11,7 @@ namespace FieldOps {
   public void Equip(int index) {
    if(weapons==null||weapons.Length==0)return;
    index=Mathf.Clamp(index,0,weapons.Length-1);var def=weapons[index];
-   CurrentIndex=index;Current=def;Ammo=new Magazine(def.magazineSize,def.reloadSeconds);gate=new ShotGate(def.fireInterval);Aim.ZoomFov=def.aimFov;Aim.Reset();
+   CurrentIndex=index;Current=def;if(sfx!=null)sfx.SetWeapon(def);Ammo=new Magazine(def.magazineSize,def.reloadSeconds);gate=new ShotGate(def.fireInterval);Aim.ZoomFov=def.aimFov;Aim.Reset();
    for(int i=0;i<models.Length;i++)models[i].gameObject.SetActive(i==index);
    muzzleFlash.transform.localPosition=def.muzzleLocal;ClearVisuals();
   }

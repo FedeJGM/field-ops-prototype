@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   nameKey: weaponShotgun
   modelPrefab: {fileID: 919132149155446097, guid: bdb05352c6927704fbafd778a6912c22, type: 3}
+  shotClip: {fileID: 8300000, guid: 45583ae7240de014693c285cb010db2e, type: 3}
+  reloadClip: {fileID: 8300000, guid: 59ea70e250363b147ab892ccf676603a, type: 3}
   modelLength: 1.05
   muzzleLocal: {x: 0, y: 0.032145835, z: 0.55499995}
   aimOffset: {x: -0.28, y: 0.075706005, z: 0.44499996}
@@ -23,6 +25,6 @@ MonoBehaviour:
   pellets: 8
   spreadDegrees: 4
   range: 40
-  reloadSeconds: 1.5
+  reloadSeconds: 2.0499773
   kick: 0.12
   aimFov: 50

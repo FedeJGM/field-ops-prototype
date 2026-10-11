@@ -47,16 +47,27 @@ namespace FieldOps.Editor {
    var hud=CreateHud(target,session,rifle);input.hud=hud;
    Configure();EditorSceneManager.SaveScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene(),ScenePath);EditorBuildSettings.scenes=new[]{new EditorBuildSettingsScene(ScenePath,true)};AssetDatabase.SaveAssets();Debug.Log("FIELD_OPS_SCENE_GENERATED "+ScenePath);
   }
-  struct WeaponSpec {public string key,fbx;public float length;public Vector3 hold,aim;public int mag;public float interval;public int damage,pellets;public float spread,range,kick,fov;}
+  struct WeaponSpec {public string key,fbx,audio;public float length;public Vector3 hold,aim;public int mag;public float interval;public int damage,pellets;public float spread,range,kick,fov;}
   // Generic names and stats; models come from the credited CC0 pack (see CREDITS.md). The default is the assault rifle.
   static readonly WeaponSpec[] WeaponSpecs={
-   new WeaponSpec{key="weaponPistol",fbx="Pistol_1",length=.24f,hold=new Vector3(0,.02f,0),aim=new Vector3(-.28f,0,-.03f),mag=12,interval=.30f,damage=20,pellets=1,spread=0,range=60,kick=.06f,fov=50},
-   new WeaponSpec{key="weaponRifle",fbx="AssaultRifle_2",length=.9f,hold=Vector3.zero,aim=new Vector3(-.28f,-.03f,-.04f),mag=30,interval=.12f,damage=25,pellets=1,spread=0,range=80,kick=.045f,fov=40},
-   new WeaponSpec{key="weaponSmg",fbx="SubmachineGun_1",length=.55f,hold=Vector3.zero,aim=new Vector3(-.28f,-.02f,-.03f),mag=32,interval=.07f,damage=15,pellets=1,spread=0,range=60,kick=.03f,fov=45},
-   new WeaponSpec{key="weaponShotgun",fbx="Shotgun_4",length=1.05f,hold=Vector3.zero,aim=new Vector3(-.28f,-.02f,-.04f),mag=6,interval=.85f,damage=15,pellets=8,spread=4,range=40,kick=.12f,fov=50},
-   new WeaponSpec{key="weaponSniper",fbx="SniperRifle_4",length=1.3f,hold=Vector3.zero,aim=new Vector3(-.28f,-.02f,-.04f),mag=5,interval=1.2f,damage=100,pellets=1,spread=0,range=120,kick=.15f,fov=20},
+   new WeaponSpec{key="weaponPistol",fbx="Pistol_1",audio="pistol",length=.24f,hold=new Vector3(0,.02f,0),aim=new Vector3(-.28f,0,-.03f),mag=12,interval=.30f,damage=20,pellets=1,spread=0,range=60,kick=.06f,fov=50},
+   new WeaponSpec{key="weaponRifle",fbx="AssaultRifle_2",audio="rifle",length=.9f,hold=Vector3.zero,aim=new Vector3(-.28f,-.03f,-.04f),mag=30,interval=.12f,damage=25,pellets=1,spread=0,range=80,kick=.045f,fov=40},
+   new WeaponSpec{key="weaponSmg",fbx="SubmachineGun_1",audio="smg",length=.55f,hold=Vector3.zero,aim=new Vector3(-.28f,-.02f,-.03f),mag=32,interval=.07f,damage=15,pellets=1,spread=0,range=60,kick=.03f,fov=45},
+   new WeaponSpec{key="weaponShotgun",fbx="Shotgun_4",audio="shotgun",length=1.05f,hold=Vector3.zero,aim=new Vector3(-.28f,-.02f,-.04f),mag=6,interval=.85f,damage=15,pellets=8,spread=4,range=40,kick=.12f,fov=50},
+   new WeaponSpec{key="weaponSniper",fbx="SniperRifle_4",audio="sniper",length=1.3f,hold=Vector3.zero,aim=new Vector3(-.28f,-.02f,-.04f),mag=5,interval=1.2f,damage=100,pellets=1,spread=0,range=120,kick=.15f,fov=20},
   };
   const string WeaponFolder="Assets/FieldOps/Weapons",WeaponModelFolder="Assets/FieldOps/ThirdParty/QuaterniusGuns/";
+  const string WeaponAudioFolder="Assets/FieldOps/Audio/Weapons/";
+  // Short effects: decompress on load so playback has no start-up delay on the phone; mono keeps them small.
+  static AudioClip ImportWeaponClip(string file) {
+   var path=WeaponAudioFolder+file;var importer=(AudioImporter)AssetImporter.GetAtPath(path);if(importer==null)throw new FileNotFoundException("Missing weapon sound "+path);
+   var settings=importer.defaultSampleSettings;
+   if(settings.loadType!=AudioClipLoadType.DecompressOnLoad||importer.loadInBackground||!importer.forceToMono) {
+    settings.loadType=AudioClipLoadType.DecompressOnLoad;settings.compressionFormat=AudioCompressionFormat.Vorbis;settings.quality=.7f;
+    importer.defaultSampleSettings=settings;importer.loadInBackground=false;importer.forceToMono=true;importer.SaveAndReimport();
+   }
+   return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+  }
   static Bounds RendererBounds(GameObject go) {var renderers=go.GetComponentsInChildren<Renderer>(true);var bounds=renderers[0].bounds;for(int i=1;i<renderers.Length;i++)bounds.Encapsulate(renderers[i].bounds);return bounds;}
   static void CreateWeapons(Transform holder,out WeaponDefinition[] definitions,out Transform[] models) {
    Directory.CreateDirectory(WeaponFolder);definitions=new WeaponDefinition[WeaponSpecs.Length];models=new Transform[WeaponSpecs.Length];
@@ -76,7 +87,7 @@ namespace FieldOps.Editor {
     var final=RendererBounds(model);Debug.Log("FIELD_OPS_WEAPON "+spec.key+" rawSize="+raw.size+" yaw="+yaw+" length="+final.size.z);
     def.nameKey=spec.key;def.modelPrefab=prefab;def.modelLength=final.size.z;def.muzzleLocal=spec.hold+new Vector3(0,final.size.y*.18f,final.size.z*.5f+.03f);// Aiming centers the gun horizontally, puts its top edge a little under the eye line and keeps its rear end 38 cm from the camera.
     def.aimOffset=new Vector3(-(holder.localPosition.x+spec.hold.x),-.075f-(holder.localPosition.y+spec.hold.y+final.size.y*.5f),.38f-(holder.localPosition.z+spec.hold.z-final.size.z*.5f));
-    def.magazineSize=spec.mag;def.fireInterval=spec.interval;def.damage=spec.damage;def.pellets=spec.pellets;def.spreadDegrees=spec.spread;def.range=spec.range;def.reloadSeconds=1.5f;def.kick=spec.kick;def.aimFov=spec.fov;
+    def.magazineSize=spec.mag;def.fireInterval=spec.interval;def.damage=spec.damage;def.pellets=spec.pellets;def.spreadDegrees=spec.spread;def.range=spec.range;def.shotClip=ImportWeaponClip(spec.audio+"_shot.wav");def.reloadClip=ImportWeaponClip(spec.audio+"_reload.wav");def.reloadSeconds=def.reloadClip.length;def.kick=spec.kick;def.aimFov=spec.fov;
     EditorUtility.SetDirty(def);definitions[i]=def;models[i]=wrapper;wrapper.gameObject.SetActive(i==GameSettings.DefaultWeapon);
    }
    AssetDatabase.SaveAssets();

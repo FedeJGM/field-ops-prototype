@@ -92,7 +92,7 @@ namespace FieldOps.Tests {
   [UnityTest] public IEnumerator PausedTimeDoesNotAdvanceReload() {
    var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;rifle.Ammo.TryConsume();rifle.Ammo.BeginReload();
    session.SetPause(true);yield return new WaitForSeconds(1.7f);Assert.IsTrue(rifle.Ammo.IsReloading,"Reload must not progress while the round is suspended.");
-   session.SetPause(false);yield return new WaitForSeconds(1.6f);Assert.IsFalse(rifle.Ammo.IsReloading);Assert.AreEqual(30,rifle.Ammo.Count);
+   session.SetPause(false);yield return new WaitForSeconds(2.0f);Assert.IsFalse(rifle.Ammo.IsReloading);Assert.AreEqual(30,rifle.Ammo.Count);
   }
   [UnityTest] public IEnumerator HoldAimZoomsLowersSensitivityShowsDotAndMovesWeapon() {
    var rifle=hud.rifle;var cam=Camera.main;Assert.IsTrue(session.StartRound("60"));yield return null;yield return null;float restX=rifle.weapon.localPosition.x;Assert.AreEqual(68,cam.fieldOfView,.1f);Assert.IsTrue(hud.crosshair.activeSelf);Assert.IsFalse(hud.aimDot.activeSelf);
@@ -268,6 +268,22 @@ namespace FieldOps.Tests {
    hud.settingsWeapon.next.onClick.Invoke();yield return null;
    Assert.AreEqual(2,rifle.CurrentIndex);Assert.AreEqual(RoundPhase.Active,session.Round.Phase);Assert.AreEqual(0,session.Round.Score);Assert.AreEqual(0,target.Damage.Hits);Assert.AreEqual(0,target.GetComponentsInChildren<Renderer>().Count(r=>r.name=="Bullet impact"));Assert.AreEqual(32,rifle.Ammo.Count);Assert.AreEqual(remaining,session.Round.RemainingSeconds,"The timer does not restart.");
    hud.closeSettingsButton.onClick.Invoke();yield return null;yield return HoldFire(61,.3f);Assert.Greater(session.Round.Score,0,"The new weapon scores from zero.");Assert.Less(session.Round.RemainingSeconds,remaining);
+  }
+  [UnityTest] public IEnumerator EachWeaponPlaysItsOwnShotAndReloadClips() {
+   var rifle=hud.rifle;var sfx=rifle.sfx;motor.enabled=false;
+   for(int i=0;i<rifle.weapons.Length;i++) {
+    var def=rifle.weapons[i];Assert.IsNotNull(def.shotClip,def.nameKey);Assert.IsNotNull(def.reloadClip,def.nameKey);yield return SelectWeapon(i);Assert.IsTrue(session.StartRound("60"));yield return null;AimAtTarget();
+    yield return HoldFire(70+i,.15f);Assert.AreSame(def.shotClip,sfx.LastClip(Sfx.Shot),def.nameKey+" shot");
+    yield return Tap(80+i,hud.reload);Assert.IsTrue(rifle.Ammo.IsReloading,def.nameKey);Assert.AreSame(def.reloadClip,sfx.LastClip(Sfx.Reload),def.nameKey+" reload");
+    yield return FinishRound();
+   }
+  }
+  [UnityTest] public IEnumerator ReloadTakesAsLongAsTheWeaponsReloadSound() {
+   var rifle=hud.rifle;foreach(int i in new[]{0,3,4}) {
+    var def=rifle.weapons[i];Assert.IsNotNull(def.reloadClip,def.nameKey);Assert.AreEqual(def.reloadClip.length,def.reloadSeconds,.01f,def.nameKey);yield return SelectWeapon(i);Assert.IsTrue(session.StartRound("60"));yield return null;rifle.Ammo.TryConsume();yield return Tap(90+i,hud.reload);
+    Assert.IsTrue(rifle.Ammo.IsReloading,def.nameKey);yield return new WaitForSeconds(def.reloadSeconds-.5f);Assert.IsTrue(rifle.Ammo.IsReloading,def.nameKey+" must still be reloading before its sound ends.");
+    yield return new WaitForSeconds(.7f);Assert.IsFalse(rifle.Ammo.IsReloading,def.nameKey);Assert.AreEqual(def.magazineSize,rifle.Ammo.Count,def.nameKey);yield return FinishRound();
+   }
   }
   IEnumerator CapturePreview(string fileName) {
    if(SystemInfo.graphicsDeviceType!=UnityEngine.Rendering.GraphicsDeviceType.Null) {

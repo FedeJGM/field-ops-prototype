@@ -4,6 +4,8 @@ namespace FieldOps {
  public sealed class WeaponDefinition : ScriptableObject {
   public string nameKey="weaponRifle";
   public GameObject modelPrefab;
+  public AudioClip shotClip;
+  public AudioClip reloadClip;
   public float modelLength;
   public Vector3 muzzleLocal;
   public Vector3 aimOffset=new Vector3(-.28f,-.03f,-.04f);
