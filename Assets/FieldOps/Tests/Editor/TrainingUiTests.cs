@@ -21,6 +21,11 @@ namespace FieldOps.Tests {
    Assert.IsFalse(hud.settingsPanel.activeSelf,"Settings start closed.");Assert.IsFalse(hud.aimDot.GetComponent<Graphic>().raycastTarget,"The aiming dot must not intercept touches.");
    foreach(var graphic in hud.GetComponentsInChildren<Graphic>(true))Assert.IsNotNull(graphic.material,graphic.name+" must keep the serialized UiDefault material.");
   }
+  [Test] public void SavedSceneWiresGameAudioToRifleAndTargetWithASingleListener() {
+   EditorSceneManager.OpenScene("Assets/FieldOps/Scenes/TrainingRange.unity",OpenSceneMode.Single);
+   var hud=Object.FindFirstObjectByType<PrototypeHud>();var target=Object.FindFirstObjectByType<TrainingTarget>();Assert.IsNotNull(hud.rifle.sfx,"Rifle needs the saved GameAudio.");Assert.AreSame(hud.rifle.sfx,target.sfx);
+   Assert.AreEqual(1,Object.FindObjectsByType<AudioListener>(FindObjectsInactive.Include,FindObjectsSortMode.None).Length);
+  }
   [TestCase("aim","AIM","APUNTAR")][TestCase("settings","SETTINGS","AJUSTES")][TestCase("aimMode","ADS MODE","MODO DE APUNTADO")][TestCase("hold","HOLD","MANTENER")][TestCase("toggle","TOGGLE","ALTERNAR")][TestCase("keepCross","CROSS WHILE AIMING","MIRA DE CRUZ AL APUNTAR")][TestCase("on","ON","SÍ")][TestCase("off","OFF","NO")][TestCase("close","CLOSE","CERRAR")]
   public void AimLabelsAreBilingual(string key,string en,string es) {Assert.AreEqual(en,GameText.Get(key,false));Assert.AreEqual(es,GameText.Get(key,true));}
   [TestCase("reload","RELOAD","RECARGAR")][TestCase("reloading","RELOADING","RECARGANDO")][TestCase("ammo","AMMO","MUNICIÓN")]

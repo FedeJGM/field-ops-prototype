@@ -131,6 +131,27 @@ namespace FieldOps.Tests {
    Assert.IsTrue(session.StartRound("60"));yield return null;var aim=Point(hud.aim);Touch(20,UnityEngine.InputSystem.TouchPhase.Began,aim);yield return new WaitForSeconds(.3f);Assert.IsTrue(rifle.Aim.Aiming);
    session.Round.Tick(60);yield return new WaitForSeconds(.1f);Assert.IsFalse(rifle.Aim.Aiming);Assert.AreEqual(68,cam.fieldOfView,.1f);Touch(20,UnityEngine.InputSystem.TouchPhase.Ended,aim);yield return null;
   }
+  [UnityTest] public IEnumerator FiringPlaysOneShotSoundPerRoundAndHitSoundsOnlyOnTarget() {
+   var rifle=hud.rifle;var sfx=rifle.sfx;Assert.NotNull(sfx);Assert.IsTrue(session.StartRound("60"));yield return null;motor.enabled=false;
+   Camera.main.transform.LookAt(target.transform.position+Vector3.up*1.25f);var fire=Point(hud.fire);Touch(21,UnityEngine.InputSystem.TouchPhase.Began,fire);yield return new WaitForSeconds(.4f);Touch(21,UnityEngine.InputSystem.TouchPhase.Ended,fire);yield return null;yield return null;
+   int fired=30-rifle.Ammo.Count;Assert.Greater(fired,1);Assert.AreEqual(fired,sfx.Count(Sfx.Shot));Assert.AreEqual(target.Damage.Hits,sfx.Count(Sfx.Hit));Assert.AreEqual(0,sfx.Count(Sfx.DryFire));Assert.AreEqual(0,sfx.Count(Sfx.Reload));
+   int hits=sfx.Count(Sfx.Hit);Camera.main.transform.rotation=Quaternion.Euler(-60,0,0);Touch(22,UnityEngine.InputSystem.TouchPhase.Began,fire);yield return new WaitForSeconds(.3f);Touch(22,UnityEngine.InputSystem.TouchPhase.Ended,fire);yield return null;yield return null;
+   Assert.Greater(sfx.Count(Sfx.Shot),fired,"Misses still make the shot sound.");Assert.AreEqual(hits,sfx.Count(Sfx.Hit),"A miss must not make the hit sound.");
+  }
+  [UnityTest] public IEnumerator EmptyMagazinePlaysDryClickInsteadOfShotOrHit() {
+   var rifle=hud.rifle;var sfx=rifle.sfx;Assert.IsTrue(session.StartRound("60"));yield return null;motor.enabled=false;Camera.main.transform.LookAt(target.transform.position+Vector3.up*1.25f);
+   while(!rifle.Ammo.IsEmpty)rifle.Ammo.TryConsume();var fire=Point(hud.fire);Touch(23,UnityEngine.InputSystem.TouchPhase.Began,fire);yield return new WaitForSeconds(.4f);Touch(23,UnityEngine.InputSystem.TouchPhase.Ended,fire);yield return null;yield return null;
+   Assert.Greater(sfx.Count(Sfx.DryFire),0);Assert.AreEqual(0,sfx.Count(Sfx.Shot));Assert.AreEqual(0,sfx.Count(Sfx.Hit));Assert.AreEqual(0,target.Damage.Hits);
+  }
+  [UnityTest] public IEnumerator ReloadSoundPlaysOncePerReloadAndSuspensionStopsIt() {
+   var rifle=hud.rifle;var sfx=rifle.sfx;Assert.IsTrue(session.StartRound("60"));yield return null;rifle.Ammo.TryConsume();
+   yield return Tap(24,hud.reload);Assert.AreEqual(1,sfx.Count(Sfx.Reload));yield return Tap(25,hud.reload);Assert.AreEqual(1,sfx.Count(Sfx.Reload),"A rejected reload must stay silent.");
+   int stops=sfx.StopCount;session.SetPause(true);yield return null;Assert.Greater(sfx.StopCount,stops,"Pausing must cut the reload sound.");session.SetPause(false);
+  }
+  [UnityTest] public IEnumerator MenusAndSettingsAreSilent() {
+   var rifle=hud.rifle;var sfx=rifle.sfx;var fire=Point(hud.fire);Touch(26,UnityEngine.InputSystem.TouchPhase.Began,fire);yield return new WaitForSeconds(.3f);Touch(26,UnityEngine.InputSystem.TouchPhase.Ended,fire);yield return null;
+   yield return Tap(27,hud.reload);foreach(Sfx s in System.Enum.GetValues(typeof(Sfx)))Assert.AreEqual(0,sfx.Count(s),s.ToString());
+  }
   IEnumerator CapturePreview(string fileName) {
    if(SystemInfo.graphicsDeviceType!=UnityEngine.Rendering.GraphicsDeviceType.Null) {
     var camera=Camera.main;var canvas=hud.GetComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceCamera;canvas.worldCamera=camera;canvas.planeDistance=.2f;yield return null;Canvas.ForceUpdateCanvases();
