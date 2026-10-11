@@ -1,0 +1,8 @@
+Ultimate Modular Men Pack by Quaternius (February 2022) - file used: Swat.fbx
+Author: Quaternius
+Source: https://quaternius.com/packs/ultimatemodularcharacters.html
+License: CC0 (public domain dedication), as stated on the pack page when downloaded on 2026-10-11.
+The FBX folder was downloaded from the author's public Google Drive link on that page; the downloaded folder did not include the pack's License.txt.
+Only Swat.fbx is included (the unmodified file, 3,106 triangles, 62 bones, flat-color materials).
+Import settings: the model's 24 animation clips are reduced to two ("Idle", looping, and "HitRecieve") so the build stays small.
+Attribution is not required by CC0; it is given here as a courtesy and for traceability.

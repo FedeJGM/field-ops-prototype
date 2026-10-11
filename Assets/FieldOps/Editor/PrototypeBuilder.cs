@@ -17,17 +17,14 @@ namespace FieldOps.Editor {
    if(!Application.isBatchMode&&!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())return;
    Directory.CreateDirectory("Assets/FieldOps/Scenes");Directory.CreateDirectory("Assets/FieldOps/Materials");
    EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single); uiMaterial=EnsureUiMaterial();
-   sand=Mat("Sand",new Color(.53f,.48f,.34f));concrete=Mat("Concrete",new Color(.5f,.51f,.46f));olive=Mat("Olive",new Color(.25f,.3f,.18f));dark=Mat("Dark",new Color(.07f,.08f,.075f));skin=Mat("Skin",new Color(.65f,.5f,.36f));metal=Mat("Metal",new Color(.2f,.22f,.23f));impact=Mat("Impact",new Color(.025f,.017f,.012f));orange=Mat("Signal",new Color(.95f,.45f,.1f));
+   sand=Mat("Sand",new Color(.53f,.48f,.34f));concrete=Mat("Concrete",new Color(.5f,.51f,.46f));olive=Mat("Olive",new Color(.25f,.3f,.18f));dark=Mat("Dark",new Color(.07f,.08f,.075f));skin=Mat("Skin",new Color(.65f,.5f,.36f));metal=Mat("Metal",new Color(.2f,.22f,.23f));impact=Mat("Impact",new Color(1f,.72f,.2f));   // bright amber: the practice target wears a near-black suit
+   orange=Mat("Signal",new Color(.95f,.45f,.1f));
    EnvironmentBuilder.CreateAtmosphere();
    var world=new GameObject("Training field — editable geometry").transform;
    EnvironmentBuilder.Build(world);
    var targetRoot=new GameObject("Training target — indestructible");targetRoot.transform.position=new Vector3(0,0,2);
    var target=targetRoot.AddComponent<TrainingTarget>();target.impactMaterial=impact;var rig=new GameObject("Idle rig").transform;rig.SetParent(targetRoot.transform,false);target.idleRig=rig;
-   Shape("Left boot",PrimitiveType.Cube,new Vector3(-.16f,.12f,0),new Vector3(.24f,.24f,.35f),dark,rig);Shape("Right boot",PrimitiveType.Cube,new Vector3(.16f,.12f,0),new Vector3(.24f,.24f,.35f),dark,rig);
-   Shape("Left leg",PrimitiveType.Capsule,new Vector3(-.16f,.6f,0),new Vector3(.23f,.4f,.23f),olive,rig);Shape("Right leg",PrimitiveType.Capsule,new Vector3(.16f,.6f,0),new Vector3(.23f,.4f,.23f),olive,rig);
-   Shape("Torso armor",PrimitiveType.Cube,new Vector3(0,1.22f,0),new Vector3(.65f,.65f,.32f),olive,rig);Shape("Vest plate",PrimitiveType.Cube,new Vector3(0,1.25f,-.185f),new Vector3(.48f,.43f,.08f),metal,rig);
-   Shape("Left arm",PrimitiveType.Capsule,new Vector3(-.44f,1.14f,0),new Vector3(.2f,.34f,.2f),olive,rig);Shape("Right arm",PrimitiveType.Capsule,new Vector3(.44f,1.14f,0),new Vector3(.2f,.34f,.2f),olive,rig);
-   Shape("Head",PrimitiveType.Sphere,new Vector3(0,1.77f,0),new Vector3(.34f,.4f,.34f),skin,rig);Shape("Helmet",PrimitiveType.Sphere,new Vector3(0,1.92f,0),new Vector3(.39f,.25f,.39f),olive,rig);
+   CharacterBuilder.Build(rig,target);
    var player=new GameObject("Player");player.transform.position=new Vector3(0,.06f,-12);var controller=player.AddComponent<CharacterController>();controller.height=1.8f;controller.radius=.3f;controller.center=new Vector3(0,.9f,0);controller.stepOffset=.3f;
    var cameraObject=new GameObject("First-person camera");cameraObject.tag="MainCamera";cameraObject.transform.SetParent(player.transform,false);cameraObject.transform.localPosition=new Vector3(0,1.65f,0);var cam=cameraObject.AddComponent<Camera>();cam.fieldOfView=68;cam.nearClipPlane=.03f;cam.farClipPlane=100;cam.clearFlags=CameraClearFlags.Skybox;cameraObject.AddComponent<AudioListener>();
    var weapon=new GameObject("Weapon holder").transform;weapon.SetParent(cameraObject.transform,false);weapon.localPosition=new Vector3(.28f,-.24f,.46f);

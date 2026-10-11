@@ -321,6 +321,25 @@ namespace FieldOps.Tests {
    yield return SceneManager.LoadSceneAsync("TrainingRange");yield return null;yield return null;var reloaded=Object.FindFirstObjectByType<PrototypeHud>();Assert.IsFalse(reloaded.fpsLabel.gameObject.activeInHierarchy,"The choice survives a restart.");
    reloaded.settingsButton.onClick.Invoke();yield return null;reloaded.fpsButton.onClick.Invoke();yield return null;Assert.IsTrue(GameSettings.ShowFps);Assert.IsTrue(reloaded.fpsLabel.gameObject.activeInHierarchy);
   }
+  [UnityTest] public IEnumerator SoldierIdlesWithRealAnimationAndEveryBodyPartCanBeHit() {
+   var animator=target.animator;Assert.IsNotNull(animator);var head=target.GetComponentsInChildren<Transform>().First(t=>t.name=="Head");yield return new WaitForSeconds(.4f);
+   float min=float.MaxValue,max=float.MinValue;float end=Time.time+1.8f;while(Time.time<end){var y=head.position.y;min=Mathf.Min(min,y);max=Mathf.Max(max,y);yield return null;}Assert.Greater(max-min,.004f,"The idle animation moves the body (breathing).");
+   Assert.IsTrue(animator.GetCurrentAnimatorStateInfo(0).IsName("Idle"));
+   var origin=new Vector3(0,0,-12);foreach(var height in new[]{1.65f,1.25f,1.0f,.9f}) {Assert.IsTrue(Physics.Raycast(new Vector3(0,height,-8),Vector3.forward,out var hit,20f,~(1<<2)),"ray at "+height);Assert.AreSame(target,hit.collider.GetComponentInParent<TrainingTarget>(),"ray at "+height);}
+   bool leg=Physics.Raycast(new Vector3(.1f,.5f,-8),Vector3.forward,out var legHit,20f,~(1<<2))&&legHit.collider.GetComponentInParent<TrainingTarget>()==target||Physics.Raycast(new Vector3(-.1f,.5f,-8),Vector3.forward,out legHit,20f,~(1<<2))&&legHit.collider.GetComponentInParent<TrainingTarget>()==target;Assert.IsTrue(leg,"A leg can be hit.");
+  }
+  [UnityTest] public IEnumerator HitMakesTheSoldierReactAndThenReturnToIdleWhileStayingIndestructible() {
+   motor.enabled=false;Assert.IsTrue(session.StartRound("60"));yield return new WaitForSeconds(.3f);AimAtTarget();yield return HoldFire(95,.25f);
+   Assert.Greater(target.Damage.Hits,0);var animator=target.animator;float until=Time.time+.5f;bool reacted=false;while(Time.time<until&&!reacted){reacted=animator.GetCurrentAnimatorStateInfo(0).IsName("Hit")||animator.IsInTransition(0)&&animator.GetNextAnimatorStateInfo(0).IsName("Hit");yield return null;}
+   Assert.IsTrue(reacted,"The soldier plays the hit reaction.");yield return new WaitForSeconds(1.2f);Assert.IsTrue(animator.GetCurrentAnimatorStateInfo(0).IsName("Idle"),"It returns to idle.");Assert.IsTrue(target.gameObject.activeInHierarchy);Assert.IsTrue(target.GetComponentInChildren<SkinnedMeshRenderer>().enabled,"Indestructible: it is never removed.");
+  }
+  [UnityTest] public IEnumerator SoldierShowcaseCapturesCloseAndFarViews() {
+   motor.enabled=false;Assert.IsTrue(session.StartRound("60"));yield return new WaitForSeconds(.8f);var cam=Camera.main;AimAtTarget();yield return null;yield return CapturePreview("soldier-far.bmp");
+   cam.transform.position=new Vector3(0,1.5f,-1.2f);cam.transform.LookAt(target.transform.position+Vector3.up*1.1f);yield return new WaitForSeconds(.2f);yield return CapturePreview("soldier-close.bmp");
+   for(int i=0;i<4;i++)target.ReceiveHit(HitAt(new Vector3(0.05f*i,1.1f+0.1f*i,1.95f)),25);yield return new WaitForSeconds(.15f);yield return CapturePreview("soldier-hit.bmp");
+   cam.transform.position=new Vector3(2.4f,1.3f,.2f);cam.transform.LookAt(target.transform.position+Vector3.up*1f);yield return new WaitForSeconds(1.0f);yield return CapturePreview("soldier-side.bmp");
+  }
+  RaycastHit HitAt(Vector3 point) {Physics.Raycast(point+Vector3.back*2f,Vector3.forward,out var hit,6f,~(1<<2));return hit;}
   IEnumerator CapturePreview(string fileName) {
    if(SystemInfo.graphicsDeviceType!=UnityEngine.Rendering.GraphicsDeviceType.Null) {
     var camera=Camera.main;var canvas=hud.GetComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceCamera;canvas.worldCamera=camera;canvas.planeDistance=.2f;yield return null;Canvas.ForceUpdateCanvases();

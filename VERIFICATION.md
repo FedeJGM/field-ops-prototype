@@ -245,6 +245,33 @@ Observed by the assistant: the packaged scene contained the FPS counter label an
 
 Reported by the user after testing on the phone: all checks passed as expected on the final build (a sharper background, no visible sky line, the FPS counter and its switch, including persistence after fully closing the app). These are user-reported results; no screenshots of the final device build were captured.
 
+## Soldier target (2026-10-11)
+
+Fifth step of the second round of features. The primitive-shape humanoid target was replaced by the "Swat" soldier from Quaternius' Ultimate Modular Men Pack (CC0 according to the pack page; one unmodified FBX of about 8 MB, 3,106 triangles, 62 bones, flat-color materials). The user picked it from the pack preview as the closest free option to a tactical operator; no commercial game's character or operator is used, and the model holds no weapon because the pack provides none. The pack's own `License.txt` was not part of the downloaded FBX folder, so the CC0 statement comes from the pack page; this is recorded in `Assets/FieldOps/ThirdParty/QuaterniusMen/NOTICE.txt` and `CREDITS.md`.
+
+Behavior: the soldier stands on the target platform facing the player (the model faces +Z, so it is turned 180 degrees), breathes with the `Idle` animation (looping) and plays `HitRecieve` when a scoring hit lands (at most once every 0.5 s), returning to idle afterwards. It is still indestructible. `CharacterBuilder` (editor generator) keeps only these two of the 24 imported clips, creates the animator controller (`Assets/FieldOps/Animation/SwatTarget.controller`, states Idle and Hit, trigger `Hit`) and attaches 14 capsule hit zones to the bones (hips, abdomen, torso, chest, neck, head, arms and legs) so the impact marks, which are parented to the collider that was hit, move with the animation. Impact marks are now bright amber because near-black marks vanished on the near-black suit (a contrast test checks this). The existing sway code and every gameplay test still apply.
+
+Package change (approved by the user): the built-in Unity module `com.unity.modules.animation` was enabled, because the `Animator` type lives in it and the project previously listed only the modules it needed. This is one entry in `Packages/manifest.json` and six lines in `Packages/packages-lock.json`; nothing is downloaded and the editor version is unchanged.
+
+| Evidence | Result | Scope |
+|---|---|---|
+| Strict RED, `Logs/char-red-edit.xml` / `char-red-play.xml` | EditMode 7 failed / PlayMode 2 failed | Imported soldier with animator, old primitives gone, looping idle and hit reaction, clip import settings, size and facing, bone colliders, credits; idle animation, hits on every body part and the hit reaction in play |
+| Strict RED, `Logs/mark-red.xml` | EditMode 1 failed | Contrast between impact marks and the dark suit |
+| Final EditMode, `Logs/mark-green-edit.xml` | **185 passed, 0 failed** | Adds 9 soldier tests |
+| Final PlayMode, `Logs/char-final-play.xml` | **54 passed, 0 failed** | Adds: the soldier idles with real animation and every body part can be hit; a hit plays the reaction and returns to idle while the target stays indestructible; a multi-angle capture |
+| Editor render previews | Visually checked | Soldier far, close, side and with impact marks (`Logs/weapon-previews/`) |
+| Android build | Build succeeded | The build report lists the soldier model at about 1 MB and the controller at under 1 KB; the 2 kept clips total about 43 KB; the APK grew by about 0.4 MB |
+
+Problems found while building it, all fixed: (1) the first test run could not compile because `Animator` is not in the project's module list; enabling the module needed the user's approval, which was requested and granted; (2) the model importer was not creating the rig avatar the `Animator` needs, so the generator failed until the import settings were set to create the avatar (a test now checks this); (3) a test assumed every bone is a child of the hips, but the legs hang from a different bone, so it now checks that the hit zones are inside the skeleton; (4) the number of planned hit zones was miscounted (13 instead of 14) and a neck zone was added to close a gap between torso and head; (5) the first impact marks were invisible on the black suit.
+
+Device measurement (Motorola edge 60 fusion, development build, `adb logcat`, soldier animated): 24 ten-second windows, about 4 minutes of play. Weighted average **59.9 FPS** (the display cap), worst window 57.9 FPS, the 95th-percentile frame time stayed at 16.7 ms in every window, and the single worst frame was 367 ms (once). This is a short session, not a long-session benchmark; no thermal or battery measurement is claimed.
+
+APK: 41,969,955 bytes; SHA-256 `EF579FCC8453C3C7433D14D5EC623885AD541AC354B1F83F5F891C2A157C05D5`. Saved scene on disk: SHA-256 `7A06987CC8584B5A5DC6B3AB4F675BF619F38090F1396C8ACEFC4AC8978761B2`.
+
+Observed by the assistant: the build report listed the soldier assets, `adb install -r` succeeded without uninstalling, the activity was the top resumed activity, and logcat showed no `NullReference`, fatal, Unity, animator, avatar or shader errors.
+
+Reported by the user after testing on the phone: all checks passed as expected on the final build (the soldier's look, idle breathing, hit reaction, hits on every body part with the marks staying attached, visibility of the amber marks, and unchanged weapon, settings and map behavior). These are user-reported results; no screenshots of the final device build were captured.
+
 ## Historical first-delivery evidence (before timed rounds)
 
 The earlier free-practice prototype passed **11 EditMode / 5 PlayMode** tests and built/installed/launched on a Motorola edge 60 fusion running Android 16. The user reported physical move/look/sprint/fire/marks/reset/language checks passing. The public screenshot is from that earlier delivery.
