@@ -87,6 +87,25 @@ Reported by the user after manual testing on the Motorola edge 60 fusion: **all 
 
 Tests establish rule behavior and scene wiring. Queued touches stand in for physical fingers, and reload timing uses real elapsed time of about 1.5 s.
 
+## Aim down sights and settings (2026-10-11)
+
+Rules (`AimControl`, pure): hold mode aims while the AIM button is held; toggle mode flips on each new press. Sprinting or any suspension cancels aiming; reloading does not. Blend takes 0.15 s; field of view goes from 68 to 40 degrees and look sensitivity is multiplied by 0.5 at full blend. Aiming shows a red center dot, hides the cross reticle unless the "cross while aiming" option is on, and moves the rifle toward the center with 70% less bob/recoil. `GameSettings` stores the hold/toggle and keep-cross choices in PlayerPrefs (defaults: hold, cross off). The SETTINGS button is available in menus and during play; opening it suspends the round clock through `TrainingSession.SetSettingsOpen`. The editor right mouse button also aims. The AIM button is inert in menus.
+
+| Evidence | Result | Scope |
+|---|---|---|
+| Strict RED, `Logs/ads-red.xml` | 12 failed, 53 passed | `AimControl` and `GameSettings` scaffolds throwing `NotImplementedException` |
+| Strict RED, `Logs/ads-red2-edit.xml` / `ads-red2-play.xml` | EditMode 10 failed / PlayMode 6 failed | Saved aim/settings UI, bilingual labels and integration missing |
+| Final EditMode, `Logs/ads-final-edit.xml` | **75 passed, 0 failed** | Adds 10 aim-rule tests, 2 settings-persistence tests, saved-scene wiring and 9 bilingual label cases |
+| Final PlayMode, `Logs/ads-preview2-play.xml` | **20 passed, 0 failed** | Adds: hold-aim zoom/sensitivity/dot/weapon pose; toggle mode from settings; keep-cross option; settings pause the round and work in menus; sprint cancels aiming while reloading does not; round end resets aiming |
+| Editor render previews | Visually checked | Aiming view and settings panel (`Logs/ads-aim-preview.bmp`, `Logs/ads-settings-preview.bmp`). The first aiming capture showed the rifle stock covering the view and the panel showing 2% of the menu behind it; both were fixed and re-checked |
+| Android build | Build succeeded | Same Unity 6000.0.70f1 route, ARM64 IL2CPP, GLES3 |
+
+APK: 41,494,164 bytes; SHA-256 `55542095C3B45F853D205D9B123E71F40D3908CA9AB7CC42F9E358D0CD0F3720`. Saved scene on disk: SHA-256 `A4EBBCB4BB78E9C32C737484E786534CD0720D1E43C09A3E1FBFDD4B078F1A11`.
+
+Observed by the assistant: the APK hash differs from the previous build, the packaged scene contains the aim button, `adb install -r` succeeded without uninstalling, the activity was the top resumed activity, and logcat showed no `NullReference`, fatal or Unity exceptions.
+
+Reported by the user after manual testing on the Motorola edge 60 fusion: **all checks passed as expected** (hold and toggle aiming, zoom and lower sensitivity, red dot and optional cross, settings pausing the clock, sprint cancelling aim, reload while aiming, persistence after closing the app, button layout and Spanish text fit). These are user-reported results; no screenshots of this build were captured and no FPS/thermal benchmark is claimed. The right-mouse-button aiming has no automated test.
+
 ## Historical first-delivery evidence (before timed rounds)
 
 The earlier free-practice prototype passed **11 EditMode / 5 PlayMode** tests and built/installed/launched on a Motorola edge 60 fusion running Android 16. The user reported physical move/look/sprint/fire/marks/reset/language checks passing. The public screenshot is from that earlier delivery.

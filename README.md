@@ -27,6 +27,8 @@ The saved scene is editable: expand the field, target, player and HUD in the Hie
 | Sprint | Hold SPRINT / ESPRINTAR while moving | Hold left Shift |
 | Fire | Hold FIRE / DISPARAR | Hold left mouse button |
 | Reload | Tap RELOAD / RECARGAR (above the fire button) | R key |
+| Aim down sights | Hold or tap AIM / APUNTAR (above sprint); mode set in settings | Right mouse button |
+| Settings | SETTINGS / AJUSTES button, bottom-right | Escape, then click the button |
 | Switch language | ESPAÑOL / ENGLISH button | Escape, then click the button |
 | Start / repeat a round | Enter seconds and tap the menu buttons | Enter seconds and click the menu buttons |
 
@@ -50,17 +52,18 @@ The first import and IL2CPP build can take several minutes. A compiled APK exist
 - First-person rifle, walking, looking, sprinting and touchscreen controls.
 - Raycast firing, target damage counters and capped persistent impact marks.
 - Animated idle target and original simplified training-field geometry.
+- Aim down sights (ADS): 40-degree zoom with smooth transition, half look sensitivity, red-dot sight and a lowered rifle. A settings menu (pauses the round) chooses hold or toggle mode and whether the cross reticle stays visible while aiming; both choices are stored locally. Sprinting cancels aiming; reloading does not.
 - 30-round magazine with infinite reserve and manual reload (1.5 s, no auto-reload); ammo counter in the HUD. Ammo refills at every round start and reload time pauses with the round.
 - Configurable 1–300-second training rounds, countdown, hit score, results and replay.
 - English and Spanish buttons and messages.
 
-**Out of scope for this delivery:** sound, attacking enemies, death, aim-down-sights, multiplayer, campaign missions and production-quality animation.
+**Out of scope for this delivery:** sound, attacking enemies, death, multiplayer, campaign missions and production-quality animation.
 
 ## Verification
 
-Current source checks passed: **53/53 EditMode** and **14/14 PlayMode** tests. These include magazine/reload rules, duration boundaries, countdown/score rules, queued touch interactions with the actual menu/InputField, expiry/replay, held-input suppression and pause/focus behavior. Configuration, active-play and results views were rendered and visually checked in the editor.
+Current source checks passed: **75/75 EditMode** and **20/20 PlayMode** tests. These include aim/settings rules, magazine/reload rules, duration boundaries, countdown/score rules, queued touch interactions with the actual menu/InputField, expiry/replay, held-input suppression and pause/focus behavior. Configuration, active-play and results views were rendered and visually checked in the editor.
 
-The timed-round APK and then the ammo/reload APK were built, installed and manually tested on a Motorola edge 60 fusion running Android 16; the user reported that keyboard entry, validation, countdown, results, replay, language and background/resume checks all passed. The screenshot above is still from the earlier free-practice APK and does not show the new menus.
+The timed-round, ammo/reload and ADS/settings APKs were built, installed and manually tested on a Motorola edge 60 fusion running Android 16; the user reported that keyboard entry, validation, countdown, results, replay, language and background/resume checks all passed. The screenshot above is still from the earlier free-practice APK and does not show the new menus.
 
 No FPS, thermal or long-session endurance benchmark is claimed. See [VERIFICATION.md](VERIFICATION.md) for evidence and reproduction commands.
 

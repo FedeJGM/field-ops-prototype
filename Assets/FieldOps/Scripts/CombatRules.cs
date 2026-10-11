@@ -15,6 +15,15 @@ namespace FieldOps {
  public static class GameText {
   public static string Get(string key,bool spanish) {
    switch(key) {
+    case "aim": return spanish?"APUNTAR":"AIM";
+    case "settings": return spanish?"AJUSTES":"SETTINGS";
+    case "aimMode": return spanish?"MODO DE APUNTADO":"ADS MODE";
+    case "hold": return spanish?"MANTENER":"HOLD";
+    case "toggle": return spanish?"ALTERNAR":"TOGGLE";
+    case "keepCross": return spanish?"MIRA DE CRUZ AL APUNTAR":"CROSS WHILE AIMING";
+    case "on": return spanish?"SÍ":"ON";
+    case "off": return spanish?"NO":"OFF";
+    case "close": return spanish?"CERRAR":"CLOSE";
     case "reload": return spanish?"RECARGAR":"RELOAD";
     case "reloading": return spanish?"RECARGANDO":"RELOADING";
     case "ammo": return spanish?"MUNICIÓN":"AMMO";

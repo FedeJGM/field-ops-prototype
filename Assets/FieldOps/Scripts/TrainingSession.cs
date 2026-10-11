@@ -10,6 +10,8 @@ namespace FieldOps {
   public TrainingRound Round { get; } = new TrainingRound();
   double lastTime;
   bool paused,unfocused;
+  public bool SettingsOpen {get;private set;}
+  public void SetSettingsOpen(bool value) {Synchronize();SettingsOpen=value;ApplySuspension();}
   public bool GameplayEnabled => Round.Phase==RoundPhase.Active&&!Round.Suspended;
   void Awake() {lastTime=Time.unscaledTimeAsDouble;}
   void Update() {Synchronize();}
@@ -31,6 +33,6 @@ namespace FieldOps {
   void OnApplicationFocus(bool value) {SetFocus(value);}
   public void SetPause(bool value) {Synchronize();paused=value;ApplySuspension();}
   public void SetFocus(bool focused) {Synchronize();unfocused=!focused;ApplySuspension();}
-  void ApplySuspension() {Round.SetSuspended(paused||unfocused);lastTime=Time.unscaledTimeAsDouble;ClearControls();}
+  void ApplySuspension() {Round.SetSuspended(paused||unfocused||SettingsOpen);lastTime=Time.unscaledTimeAsDouble;ClearControls();}
  }
 }

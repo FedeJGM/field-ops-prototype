@@ -70,15 +70,26 @@ namespace FieldOps.Editor {
    hud.joystick=Panel("Movement joystick",safe,Vector2.zero,new Vector2(175,165),new Vector2(190,190),new Color(.08f,.13f,.14f,.6f));hud.stick=Panel("Joystick thumb",hud.joystick,new Vector2(.5f,.5f),Vector2.zero,new Vector2(70,70),new Color(.62f,.69f,.56f,.8f));hud.moveLabel=Label("Movement label",safe,Vector2.zero,new Vector2(175,48),new Vector2(250,40),22);
    hud.fire=Panel("Fire touch button",safe,new Vector2(1,0),new Vector2(-160,170),new Vector2(175,130),new Color(.7f,.32f,.12f,.8f));hud.fireLabel=Label("Fire label",hud.fire,new Vector2(.5f,.5f),Vector2.zero,new Vector2(170,50),26);
    hud.reload=Panel("Reload touch button",safe,new Vector2(1,0),new Vector2(-160,300),new Vector2(175,85),new Color(.12f,.2f,.28f,.85f));hud.reloadLabel=Label("Reload label",hud.reload,new Vector2(.5f,.5f),Vector2.zero,new Vector2(170,40),23);
+   hud.aim=Panel("Aim touch button",safe,new Vector2(1,0),new Vector2(-365,215),new Vector2(180,85),new Color(.12f,.2f,.28f,.85f));hud.aimLabel=Label("Aim label",hud.aim,new Vector2(.5f,.5f),Vector2.zero,new Vector2(170,40),23);
+   hud.settingsButton=MenuButton("Settings",safe,new Vector2(1,0),new Vector2(-110,55),new Vector2(190,70));
    hud.ammoLabel=Label("Ammo counter",safe,new Vector2(1,0),new Vector2(-160,385),new Vector2(300,40),26);
    hud.sprint=Panel("Sprint touch button",safe,new Vector2(1,0),new Vector2(-365,115),new Vector2(180,85),new Color(.15f,.22f,.15f,.85f));hud.sprintLabel=Label("Sprint label",hud.sprint,new Vector2(.5f,.5f),Vector2.zero,new Vector2(180,40),23);
    hud.lookLabel=Label("Look hint",safe,new Vector2(1,.5f),new Vector2(-245,0),new Vector2(400,40),20);hud.lookLabel.color=new Color(1,1,1,.55f);
    hud.languageButton=MenuButton("Language",safe,new Vector2(1,1),new Vector2(-130,-48),new Vector2(210,60));hud.resetButton=MenuButton("Reset",safe,new Vector2(1,1),new Vector2(-130,-123),new Vector2(210,60));hud.resetLabel=hud.resetButton.GetComponentInChildren<Text>();
    hud.crosshair=CreateReticle(canvas.transform);
    hud.help=Label("Editor help",safe,new Vector2(.5f,0),new Vector2(0,25),new Vector2(950,40),18);
-   CreateRoundMenu(hud,safe);
-   hud.languageButton.transform.SetAsLastSibling();
+   CreateRoundMenu(hud,safe);CreateSettingsMenu(hud,safe);
+   var dot=Panel("Aim dot",canvas.transform,new Vector2(.5f,.5f),Vector2.zero,new Vector2(8,8),new Color(1,.1f,.1f,1));dot.GetComponent<Image>().raycastTarget=false;hud.aimDot=dot.gameObject;dot.gameObject.SetActive(false);
+   hud.languageButton.transform.SetAsLastSibling();hud.settingsButton.transform.SetAsLastSibling();
    new GameObject("EventSystem",typeof(EventSystem),typeof(InputSystemUIInputModule));return hud;
+  }
+  static void CreateSettingsMenu(PrototypeHud hud,RectTransform safe) {
+   var panel=Panel("Settings panel",safe,new Vector2(.5f,.5f),Vector2.zero,new Vector2(760,420),new Color(.09f,.14f,.15f,1f));panel.GetComponent<Image>().raycastTarget=true;hud.settingsPanel=panel.gameObject;
+   hud.settingsTitle=Label("Settings title",panel,new Vector2(.5f,.5f),new Vector2(0,150),new Vector2(710,55),32);
+   hud.aimModeButton=MenuButton("Aim mode",panel,new Vector2(.5f,.5f),new Vector2(0,60),new Vector2(680,70));hud.aimModeLabel=hud.aimModeButton.GetComponentInChildren<Text>();
+   hud.crossButton=MenuButton("Keep cross",panel,new Vector2(.5f,.5f),new Vector2(0,-30),new Vector2(680,70));hud.crossLabel=hud.crossButton.GetComponentInChildren<Text>();
+   hud.closeSettingsButton=MenuButton("Close settings",panel,new Vector2(.5f,.5f),new Vector2(0,-135),new Vector2(420,65));
+   panel.gameObject.SetActive(false);
   }
   static void CreateRoundMenu(PrototypeHud hud,RectTransform safe) {
    hud.timerLabel=Label("Round timer",safe,new Vector2(.5f,1),new Vector2(0,-205),new Vector2(450,55),32);

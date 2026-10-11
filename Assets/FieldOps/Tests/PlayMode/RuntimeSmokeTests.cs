@@ -11,7 +11,7 @@ namespace FieldOps.Tests {
  public class RuntimeSmokeTests {
   TrainingSession session; PrototypeInput input; FirstPersonMotor motor; TrainingTarget target; PrototypeHud hud; Touchscreen screen;
   [UnitySetUp] public IEnumerator LoadScene() {
-   PlayerPrefs.SetInt("language",0);
+   PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");
    yield return SceneManager.LoadSceneAsync("TrainingRange");
    yield return null; yield return null;
    input=Object.FindFirstObjectByType<PrototypeInput>();motor=Object.FindFirstObjectByType<FirstPersonMotor>();target=Object.FindFirstObjectByType<TrainingTarget>();hud=Object.FindFirstObjectByType<PrototypeHud>();
@@ -22,7 +22,7 @@ namespace FieldOps.Tests {
    session=Object.FindFirstObjectByType<TrainingSession>();session.SetPause(false);session.SetFocus(true);
    screen=InputSystem.AddDevice<Touchscreen>();InputSystem.EnableDevice(screen);Canvas.ForceUpdateCanvases();
   }
-  [UnityTearDown] public IEnumerator Cleanup() {InputSystem.RemoveDevice(screen);PlayerPrefs.SetInt("language",0);yield return null;}
+  [UnityTearDown] public IEnumerator Cleanup() {InputSystem.RemoveDevice(screen);PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");yield return null;}
   Vector2 Point(RectTransform rect) {return RectTransformUtility.WorldToScreenPoint(null,rect.position);}
   void Touch(int id,UnityEngine.InputSystem.TouchPhase phase,Vector2 point) {InputSystem.QueueStateEvent(screen,new TouchState {touchId=id,phase=phase,position=point});}
   [UnityTest] public IEnumerator SceneRendersWithConfiguredRuntimeObjects() {
@@ -93,6 +93,43 @@ namespace FieldOps.Tests {
    var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;rifle.Ammo.TryConsume();rifle.Ammo.BeginReload();
    session.SetPause(true);yield return new WaitForSeconds(1.7f);Assert.IsTrue(rifle.Ammo.IsReloading,"Reload must not progress while the round is suspended.");
    session.SetPause(false);yield return new WaitForSeconds(1.6f);Assert.IsFalse(rifle.Ammo.IsReloading);Assert.AreEqual(30,rifle.Ammo.Count);
+  }
+  [UnityTest] public IEnumerator HoldAimZoomsLowersSensitivityShowsDotAndMovesWeapon() {
+   var rifle=hud.rifle;var cam=Camera.main;Assert.IsTrue(session.StartRound("60"));yield return null;yield return null;float restX=rifle.weapon.localPosition.x;Assert.AreEqual(68,cam.fieldOfView,.1f);Assert.IsTrue(hud.crosshair.activeSelf);Assert.IsFalse(hud.aimDot.activeSelf);
+   var point=Point(hud.aim);Touch(12,UnityEngine.InputSystem.TouchPhase.Began,point);yield return new WaitForSeconds(.4f);
+   Assert.IsTrue(rifle.Aim.Aiming);Assert.AreEqual(40,cam.fieldOfView,.5f);Assert.AreEqual(.5f,input.LookScale,.02f);Assert.IsTrue(hud.aimDot.activeSelf);Assert.IsFalse(hud.crosshair.activeSelf,"Cross hides while aiming unless the option is on.");Assert.Less(rifle.weapon.localPosition.x,restX-.15f);yield return CapturePreview("ads-aim-preview.bmp");
+   Touch(12,UnityEngine.InputSystem.TouchPhase.Ended,point);yield return new WaitForSeconds(.4f);
+   Assert.IsFalse(rifle.Aim.Aiming);Assert.AreEqual(68,cam.fieldOfView,.5f);Assert.AreEqual(1,input.LookScale,.02f);Assert.IsFalse(hud.aimDot.activeSelf);Assert.IsTrue(hud.crosshair.activeSelf);Assert.AreEqual(restX,rifle.weapon.localPosition.x,.02f);
+  }
+  [UnityTest] public IEnumerator ToggleModeFromSettingsKeepsAimingUntilPressedAgain() {
+   var rifle=hud.rifle;hud.settingsButton.onClick.Invoke();yield return null;Assert.IsTrue(hud.settingsPanel.activeSelf);yield return CapturePreview("ads-settings-preview.bmp");hud.aimModeButton.onClick.Invoke();yield return null;
+   Assert.IsTrue(GameSettings.AimToggle);Assert.IsTrue(hud.aimModeLabel.text.Contains(GameText.Get("toggle",false)));hud.closeSettingsButton.onClick.Invoke();yield return null;Assert.IsFalse(hud.settingsPanel.activeSelf);
+   Assert.IsTrue(session.StartRound("60"));yield return null;
+   yield return Tap(13,hud.aim);yield return new WaitForSeconds(.3f);Assert.IsTrue(rifle.Aim.Aiming,"Toggle must keep aiming after release.");
+   yield return Tap(14,hud.aim);yield return new WaitForSeconds(.3f);Assert.IsFalse(rifle.Aim.Aiming);
+  }
+  [UnityTest] public IEnumerator KeepCrossOptionShowsBothReticlesWhileAiming() {
+   var rifle=hud.rifle;hud.settingsButton.onClick.Invoke();yield return null;hud.crossButton.onClick.Invoke();yield return null;Assert.IsTrue(GameSettings.KeepCrossWhileAiming);hud.closeSettingsButton.onClick.Invoke();
+   Assert.IsTrue(session.StartRound("60"));yield return null;var point=Point(hud.aim);Touch(15,UnityEngine.InputSystem.TouchPhase.Began,point);yield return new WaitForSeconds(.4f);
+   Assert.IsTrue(rifle.Aim.Aiming);Assert.IsTrue(hud.aimDot.activeSelf);Assert.IsTrue(hud.crosshair.activeSelf);Touch(15,UnityEngine.InputSystem.TouchPhase.Ended,point);yield return null;
+  }
+  [UnityTest] public IEnumerator SettingsPauseTheRoundAndWorkInMenus() {
+   hud.settingsButton.onClick.Invoke();yield return null;Assert.IsTrue(hud.settingsPanel.activeSelf);hud.closeSettingsButton.onClick.Invoke();yield return null;Assert.AreEqual(RoundPhase.Configuration,session.Round.Phase);Assert.IsFalse(hud.settingsPanel.activeSelf);
+   Assert.IsTrue(session.StartRound("60"));yield return null;hud.settingsButton.onClick.Invoke();yield return null;
+   Assert.IsTrue(session.SettingsOpen);Assert.IsTrue(session.Round.Suspended);double remaining=session.Round.RemainingSeconds;yield return new WaitForSeconds(.3f);Assert.AreEqual(remaining,session.Round.RemainingSeconds);Assert.IsFalse(input.Fire);Assert.IsFalse(hud.rifle.Aim.Aiming);
+   hud.closeSettingsButton.onClick.Invoke();yield return new WaitForSeconds(.2f);Assert.IsFalse(session.SettingsOpen);Assert.IsFalse(session.Round.Suspended);Assert.Less(session.Round.RemainingSeconds,remaining);
+  }
+  [UnityTest] public IEnumerator SprintCancelsAimingButReloadingKeepsIt() {
+   var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;rifle.Ammo.TryConsume();var aim=Point(hud.aim);var sprint=Point(hud.sprint);
+   Touch(16,UnityEngine.InputSystem.TouchPhase.Began,aim);yield return new WaitForSeconds(.3f);Assert.IsTrue(rifle.Aim.Aiming);
+   yield return Tap(17,hud.reload);Assert.IsTrue(rifle.Ammo.IsReloading);Assert.IsTrue(rifle.Aim.Aiming,"Reloading must not cancel aiming.");
+   Touch(18,UnityEngine.InputSystem.TouchPhase.Began,sprint);yield return new WaitForSeconds(.3f);Assert.IsFalse(rifle.Aim.Aiming,"Sprinting cancels aiming.");
+   Touch(18,UnityEngine.InputSystem.TouchPhase.Ended,sprint);Touch(16,UnityEngine.InputSystem.TouchPhase.Ended,aim);yield return null;yield return null;
+  }
+  [UnityTest] public IEnumerator RoundEndResetsAimingAndAimButtonIsInertInMenus() {
+   var rifle=hud.rifle;var cam=Camera.main;yield return Tap(19,hud.aim);Assert.IsFalse(rifle.Aim.Aiming);
+   Assert.IsTrue(session.StartRound("60"));yield return null;var aim=Point(hud.aim);Touch(20,UnityEngine.InputSystem.TouchPhase.Began,aim);yield return new WaitForSeconds(.3f);Assert.IsTrue(rifle.Aim.Aiming);
+   session.Round.Tick(60);yield return new WaitForSeconds(.1f);Assert.IsFalse(rifle.Aim.Aiming);Assert.AreEqual(68,cam.fieldOfView,.1f);Touch(20,UnityEngine.InputSystem.TouchPhase.Ended,aim);yield return null;
   }
   IEnumerator CapturePreview(string fileName) {
    if(SystemInfo.graphicsDeviceType!=UnityEngine.Rendering.GraphicsDeviceType.Null) {
