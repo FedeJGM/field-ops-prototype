@@ -1,6 +1,6 @@
 # Timed-training verification
 
-The local source now provides configurable **1–300-second** training rounds, a visible countdown, one point per successful target hit, frozen final results, replay and duration changes. The original Android free-practice evidence is historical and does **not** establish that the new flow works on a physical phone.
+The local source now provides configurable **1–300-second** training rounds, a visible countdown, one point per successful target hit, frozen final results, replay and duration changes. The new flow was built into a fresh APK, installed on a physical Motorola edge 60 fusion (Android 16) and reported working by the user (see the device section below). The original free-practice evidence is historical.
 
 ## Current source checks
 
@@ -11,7 +11,8 @@ The local source now provides configurable **1–300-second** training rounds, a
 | Final EditMode: `Logs/training-editmode-final.xml` | **39 passed, 0 failed, 0 skipped** | Existing combat/reticle/shader regressions plus duration parsing, boundaries, expiry, replay, suspension and saved UI |
 | Final PlayMode: `Logs/training-playmode-final.xml` | **9 passed, 0 failed, 0 skipped** | Actual saved scene, queued touch input/UI, movement/collision, shooting, marks/idle, round flow and bilingual HUD |
 | Editor render previews | Visually checked | Configuration, active countdown and results views; ignored local `Logs/training-*-preview.bmp` |
-| Updated Android build/device verification | Pending at source handoff | Must use a newly built APK, not the previous free-practice APK |
+| Re-run EditMode / PlayMode on 2026-10-11 | **39/39** and **9/9** passed | Independent re-run of the same suites before committing (`Logs/review-editmode.xml`, `Logs/review-playmode.xml`) |
+| Android build and device install, 2026-10-11 | Build succeeded; installed in place and launched | New timed-round APK on the Motorola; see the device section below |
 
 All launches used Unity **6000.0.70f1**. No packages, editor version or rendering pipeline were upgraded. Logs/XML/previews remain private ignored outputs, not repository deliverables.
 
@@ -48,16 +49,22 @@ Unity.exe -batchmode -nographics -quit -projectPath PROJECT -buildTarget Android
 
 Do not append `-quit` to test-runner commands. The runner owns completion. A hidden batch Game view needs test-only input/focus settings; physical-device behavior must be checked separately. Scene regeneration overwrites the generated scene/materials: save custom variants under another name before rebuilding it.
 
-## Physical-device acceptance checklist for the new APK
+## Physical-device acceptance for the new APK (2026-10-11)
 
-- [ ] Numeric keyboard opens; entering 1 and 300 starts valid rounds. 0/301/empty and invalid pasted text show a clear message.
-- [ ] A short round counts down to 00:00 and shows frozen final score; further touches cannot score.
-- [ ] Repeat uses the selected duration and starts with zero counters/marks; change duration returns to configuration.
-- [ ] Configuration/results touches and typing do not move/look/fire; active multi-touch still works.
-- [ ] Background/lock/focus loss while holding controls pauses active time, clears controls and resumes fairly.
-- [ ] English/Spanish labels, safe-area layout and native keyboard behavior are usable on the Motorola phone.
+Build: ARM64 IL2CPP OpenGL ES 3 development APK from commit `913cea2`, Unity 6000.0.70f1, build result Success. APK: 41,493,278 bytes; SHA-256 `70430E131DA739D63176035B36C822AB33B603A3AD42AB4A3A1854CF0B4C306C`. Saved scene on disk: SHA-256 `73810718D6F0B01463FDAA161C7C01E96290953A1A57DEAA42C17519D3A9A441`.
 
-No updated device result, FPS/thermal benchmark, prolonged endurance, broad Android compatibility or production/release signing is claimed here.
+Observed by the assistant: `adb install -r` succeeded without uninstalling or clearing data, and `UnityPlayerGameActivity` was the top resumed activity after launch. The only fatal-exception lines in logcat belonged to an Android system chooser activity from the previous day, not to this app.
+
+Reported by the user after manual testing on the phone: **all checks passed as expected.**
+
+- [x] Numeric keyboard opens; entering 1 and 300 starts valid rounds. 0/301/empty and invalid input show a clear message.
+- [x] A short round counts down to 00:00 and shows frozen final score; further touches cannot score.
+- [x] Repeat uses the selected duration and starts with zero counters/marks; change duration returns to configuration.
+- [x] Configuration/results touches do not move/look/fire; active multi-touch still works.
+- [x] Backgrounding the app during a round pauses active time and resumes fairly.
+- [x] English/Spanish labels and native keyboard behavior are usable on the Motorola phone.
+
+These are user-reported results, not recorded measurements: no screenshots of the new flow were captured, and lock-screen and focus-loss-while-holding-controls cases were not separately itemized. No FPS/thermal benchmark, prolonged endurance, broad Android compatibility or production/release signing is claimed.
 
 ## Historical first-delivery evidence (before timed rounds)
 
@@ -71,6 +78,6 @@ An initial sandbox-only license IPC failure was harness unavailability, not beha
 
 ## Work-unit and rollback boundary
 
-This uncommitted feature is one cohesive unit: new TrainingRound/TrainingSession scripts and metas; combat/input/rifle/target/HUD integration; saved scene generation and scene; new rule/UI tests and updated runtime tests; README/this record. Rollback removes the new files and restores only those modified tracked files to the pre-feature prototype, without touching pinned packages or unrelated work. No commit, staging, push, release or GitHub mutation was performed for this implementation.
+This feature (commit `913cea2`) is one cohesive unit: new TrainingRound/TrainingSession scripts and metas; combat/input/rifle/target/HUD integration; saved scene generation and scene; new rule/UI tests and updated runtime tests; README/this record. Rollback removes the new files and restores only those modified tracked files to the pre-feature prototype, without touching pinned packages or unrelated work. No release or APK upload was created.
 
 Sound, attacking/dead enemies, ADS, ammunition, reload, multiplayer and campaign missions remain out of scope.

@@ -58,7 +58,7 @@ The first import and IL2CPP build can take several minutes. A compiled APK exist
 
 Current timed-round source checks passed: **39/39 EditMode** and **9/9 PlayMode** tests. These include duration boundaries, countdown/score rules, queued touch interactions with the actual menu/InputField, expiry/replay, held-input suppression and pause/focus behavior. Configuration, active-play and results views were rendered and visually checked in the editor.
 
-The previously built free-practice APK was physically checked on a Motorola edge 60 fusion running Android 16. **That older APK and its phone screenshot do not contain or prove this new timed-round feature.** The new flow still requires its own Android build/device verification; editor automation sets text programmatically after touch focus, not through a physical Android keyboard.
+The timed-round APK was built, installed and manually tested on a Motorola edge 60 fusion running Android 16; the user reported that keyboard entry, validation, countdown, results, replay, language and background/resume checks all passed. The screenshot above is still from the earlier free-practice APK and does not show the new menus.
 
 No FPS, thermal or long-session endurance benchmark is claimed. See [VERIFICATION.md](VERIFICATION.md) for evidence and reproduction commands.
 
