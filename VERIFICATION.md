@@ -289,7 +289,7 @@ Two problems were reported by the user on the phone right after the soldier targ
 | Final PlayMode | **59 passed, 0 failed** | Adds 5: leg hit zones from the real eye position, all visible body vertices covered, frame-by-frame leg coverage while animating, impact marks without runtime primitives, steep-downward shots not blocked by the player |
 | Phone log, diagnostic build | 30 of 32 shots hit `Player` | Observed by the assistant through `adb logcat` |
 
-Limits: the final fix (player layer) passed all tests but **has not been tested on the phone yet**; the user reported the red text gone on the diagnostic build, and the leg result with the layer fix is pending. The development-only shot log (`FIELD_OPS_SHOT`) stays in the code for now and prints nothing in release builds.
+Phone check of the final build (APK SHA-256 `91cc53218144094ed64c10bad7336c1d79f5debffce9fb906aa0edec4d0454e5`, 41,970,215 bytes), observed by the assistant through `adb logcat` after the user shot the legs from the side and the back: 64 shots logged, 61 hit the soldier and all 61 were accepted (51 lower legs, 8 upper legs, 2 hips), 0 hit `Player`, and 3 hit the low target platform under the feet (the user's one missed shot, aimed at ground level). No `SphereCollider`, `NullReference` or other exception appeared. The user also reported the red console text gone. Limits: one short session on one phone. The development-only shot log (`FIELD_OPS_SHOT`) stays in the code and prints nothing in release builds.
 
 ## Historical first-delivery evidence (before timed rounds)
 
