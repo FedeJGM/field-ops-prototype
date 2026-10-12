@@ -53,9 +53,9 @@ namespace FieldOps.Editor {
    // The model faces +Z; the player is at -Z, so the soldier turns around.
    soldier.transform.localPosition=Vector3.zero;soldier.transform.localRotation=Quaternion.Euler(0,180,0);
    var root=soldier.transform;
-   foreach(var spec in new[]{("Hips","Abdomen",.18f),("Abdomen","Torso",.18f),("Torso","Chest",.2f),("Chest","Neck",.19f),("Neck","Head",.08f),("Head","Head_end",.13f),
+   foreach(var spec in new[]{("Hips","Abdomen",.28f),("Abdomen","Torso",.2f),("Torso","Chest",.2f),("Chest","Neck",.19f),("Neck","Head",.08f),("Head","Head_end",.13f),
     ("UpperArm.L","LowerArm.L",.075f),("LowerArm.L","Wrist.L",.065f),("UpperArm.R","LowerArm.R",.075f),("LowerArm.R","Wrist.R",.065f),
-    ("UpperLeg.L","LowerLeg.L",.11f),("LowerLeg.L","Foot.L",.085f),("UpperLeg.R","LowerLeg.R",.11f),("LowerLeg.R","Foot.R",.085f)})Limb(root,spec.Item1,spec.Item2,spec.Item3);
+    ("UpperLeg.L","LowerLeg.L",.15f),("LowerLeg.L","Foot.L",.13f),("UpperLeg.R","LowerLeg.R",.15f),("LowerLeg.R","Foot.R",.13f)})Limb(root,spec.Item1,spec.Item2,spec.Item3);
    var clips=AssetDatabase.LoadAllAssetsAtPath(ModelPath).OfType<AnimationClip>().ToArray();
    var controller=BuildController(clips.First(c=>c.name=="Idle"),clips.First(c=>c.name=="HitRecieve"));
    var animator=soldier.GetComponent<Animator>();if(animator==null){animator=soldier.AddComponent<Animator>();animator.avatar=AssetDatabase.LoadAllAssetsAtPath(ModelPath).OfType<Avatar>().First();}

@@ -321,6 +321,52 @@ namespace FieldOps.Tests {
    yield return SceneManager.LoadSceneAsync("TrainingRange");yield return null;yield return null;var reloaded=Object.FindFirstObjectByType<PrototypeHud>();Assert.IsFalse(reloaded.fpsLabel.gameObject.activeInHierarchy,"The choice survives a restart.");
    reloaded.settingsButton.onClick.Invoke();yield return null;reloaded.fpsButton.onClick.Invoke();yield return null;Assert.IsTrue(GameSettings.ShowFps);Assert.IsTrue(reloaded.fpsLabel.gameObject.activeInHierarchy);
   }
+  [UnityTest] public IEnumerator LegsCanBeHitFromTheRealPlayerEyeAtTheStartingPosition() {
+   motor.enabled=false;yield return new WaitForSeconds(.3f);var eye=Camera.main.transform.position;var legBones=new[]{"UpperLeg.L","LowerLeg.L","Foot.L","UpperLeg.R","LowerLeg.R","Foot.R"};
+   foreach(var name in legBones) {
+    var bone=target.GetComponentsInChildren<Transform>().First(t=>t.name==name);var aim=bone.position+Vector3.up*.08f;var dir=(aim-eye).normalized;
+    Assert.IsTrue(Physics.Raycast(eye,dir,out var hit,150f,~(1<<2),QueryTriggerInteraction.Ignore),name+": the ray hits something");
+    Assert.AreSame(target,hit.collider.GetComponentInParent<TrainingTarget>(),name+": the ray hits the soldier, not "+hit.collider.name);
+   }
+  }
+  [UnityTest] public IEnumerator EveryVisibleBodyVertexIsCoveredByAHitZone() {
+   motor.enabled=false;yield return new WaitForSeconds(.3f);var eye=Camera.main.transform.position;int total=0,miss=0;var bins=new int[10];
+   foreach(var smr in target.GetComponentsInChildren<SkinnedMeshRenderer>()) {
+    var baked=new Mesh();smr.BakeMesh(baked,true);var verts=baked.vertices;
+    for(int i=0;i<verts.Length;i+=2) {
+     var w=smr.transform.TransformPoint(verts[i]);if(w.y<.03f)continue;total++;
+     bool ok=Physics.Raycast(eye,(w-eye).normalized,out var hit,150f,~(1<<2),QueryTriggerInteraction.Ignore)&&hit.collider.GetComponentInParent<TrainingTarget>()==target;if(!ok){miss++;bins[Mathf.Clamp((int)(w.y*5),0,9)]++;}
+    }
+   }
+   Debug.Log("BODYSCAN total="+total+" miss="+miss+" missPer20cm="+string.Join(",",bins));
+   Assert.Less(miss,total*0.02f,"Visible vertices not covered by a hit zone: "+miss+"/"+total+" per 20 cm of height: "+string.Join(",",bins));
+  }
+  [UnityTest] public IEnumerator LegHitZonesFollowTheAnimatedLegsFrameByFrame() {
+   motor.enabled=false;yield return new WaitForSeconds(.3f);var center=target.transform.position;var smrs=target.GetComponentsInChildren<SkinnedMeshRenderer>();int total=0,miss=0,fixedBySync=0;var meshes=smrs.Select(_=>new Mesh()).ToArray();
+   for(int frame=0;frame<90;frame++) {
+    yield return null;var eye=center+Quaternion.Euler(0,(frame*37)%360,0)*new Vector3(0,0,-4f)+Vector3.up*1.6f;
+    for(int k=0;k<smrs.Length;k++) {smrs[k].BakeMesh(meshes[k],true);var verts=meshes[k].vertices;
+     for(int i=frame%7;i<verts.Length;i+=7) {var w=smrs[k].transform.TransformPoint(verts[i]);if(w.y>.8f||w.y<.08f)continue;if(Physics.Linecast(eye,w,out var block,~(1<<2),QueryTriggerInteraction.Ignore)&&block.collider.GetComponentInParent<TrainingTarget>()!=target)continue;
+      total++;bool ok=Physics.Raycast(eye,(w-eye).normalized,out var hit,150f,~(1<<2),QueryTriggerInteraction.Ignore)&&hit.collider.GetComponentInParent<TrainingTarget>()==target;if(!ok){miss++;Physics.SyncTransforms();if(Physics.Raycast(eye,(w-eye).normalized,out var h2,150f,~(1<<2),QueryTriggerInteraction.Ignore)&&h2.collider.GetComponentInParent<TrainingTarget>()==target)fixedBySync++;}}}
+   }
+   Debug.Log("LAGSCAN legs total="+total+" miss="+miss+" fixedBySync="+fixedBySync);
+   Assert.Less(miss,total*0.02f,"Leg vertices missed while animating: "+miss+"/"+total);
+  }
+  [UnityTest] public IEnumerator ShotsAimedSteeplyDownwardAreNotBlockedByThePlayersOwnCollider() {
+   motor.enabled=false;yield return new WaitForSeconds(.2f);var cam=Camera.main;var player=motor.gameObject;
+   foreach(var pitch in new[]{20f,35f,50f,65f}) {
+    cam.transform.rotation=Quaternion.Euler(pitch,0,0);
+    bool hitSomething=Physics.Raycast(cam.transform.position,cam.transform.forward,out var hit,100f,~(1<<2),QueryTriggerInteraction.Ignore);
+    Assert.IsTrue(hitSomething,"pitch "+pitch+": the ray reaches the ground");Assert.AreNotEqual("Player",hit.collider.name,"pitch "+pitch+": the ray starts inside the player capsule and must not hit it");
+   }
+   Assert.AreEqual(2,player.layer,"The player is on the Ignore Raycast layer so its own capsule never blocks shots.");
+  }
+  [UnityTest] public IEnumerator ImpactMarksNeedNoRuntimePrimitiveSoTheBuildDoesNotStripTheColliderClass() {
+   Assert.IsNotNull(target.markMesh,"The mark mesh is serialized in the scene.");
+   var cam=Camera.main;motor.enabled=false;Assert.IsTrue(session.StartRound("60"));yield return new WaitForSeconds(.2f);cam.transform.LookAt(target.transform.position+Vector3.up*1.25f);
+   Assert.IsTrue(Physics.Raycast(cam.transform.position,cam.transform.forward,out var hit,150f,~(1<<2)));Assert.IsTrue(target.ReceiveHit(hit,25));
+   var mark=target.GetComponentsInChildren<Renderer>().First(r=>r.name=="Bullet impact");Assert.IsNull(mark.GetComponent<Collider>());Assert.IsNotNull(mark.GetComponent<MeshFilter>().sharedMesh);
+  }
   [UnityTest] public IEnumerator SoldierIdlesWithRealAnimationAndEveryBodyPartCanBeHit() {
    var animator=target.animator;Assert.IsNotNull(animator);var head=target.GetComponentsInChildren<Transform>().First(t=>t.name=="Head");yield return new WaitForSeconds(.4f);
    float min=float.MaxValue,max=float.MinValue;float end=Time.time+1.8f;while(Time.time<end){var y=head.position.y;min=Mathf.Min(min,y);max=Mathf.Max(max,y);yield return null;}Assert.Greater(max-min,.004f,"The idle animation moves the body (breathing).");

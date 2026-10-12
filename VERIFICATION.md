@@ -272,6 +272,25 @@ Observed by the assistant: the build report listed the soldier assets, `adb inst
 
 Reported by the user after testing on the phone: all checks passed as expected on the final build (the soldier's look, idle breathing, hit reaction, hits on every body part with the marks staying attached, visibility of the amber marks, and unchanged weapon, settings and map behavior). These are user-reported results; no screenshots of the final device build were captured.
 
+## Shot and hit-zone fixes after the soldier target (2026-10-11)
+
+Two problems were reported by the user on the phone right after the soldier target: a red "Can't add component because class 'SphereCollider' doesn't exist" message in the development console on every hit, and shots at the legs not registering reliably.
+
+**1. Console error.** The impact mark was created at runtime with `GameObject.CreatePrimitive(PrimitiveType.Sphere)`, which adds a `SphereCollider` that was then destroyed. The message points at the collider class missing from the Android build (probably removed by code stripping; this was not confirmed against the build itself). The mark is now an empty object with a serialized sphere mesh (`TrainingTarget.markMesh`, assigned by the scene generator) and a `MeshRenderer`; no collider is ever created. Reported by the user after installing the fixed build: the red text no longer appears.
+
+**2. Legs not registering.** Two separate causes were found.
+- *Hit zones too small (real, fixed).* Casting rays from the camera to the baked vertices of all four skinned meshes of the soldier showed that 1,120 of 6,259 visible points (about 18 %) were not covered by any hit zone, almost all between 0.8 and 1.0 m (hips and upper thighs). The capsules for hips, abdomen, thighs and calves were widened. Now 65 of 6,259 (about 1 %) are missed, only at the tips of the feet and part of the head. A later frame-by-frame check while the idle animation plays, from varying angles, measured 0 misses in 39,839 leg samples.
+- *The player's own collider blocked the shots (the main cause).* Because the editor checks above showed the legs covered from every side, a development build logged every shot (`FIELD_OPS_SHOT`, dev builds only). On the phone, 30 of 32 shots hit the object `Player` at distance 0 and only 2 reached the soldier. The camera sits inside the player's capsule and a ray aimed steeply downward was blocked by it; this explains why legs worked "sometimes" from the front and not from the side or back, where the player stands closer and aims lower. The player is now on the `Ignore Raycast` layer (it still collides with the world when walking).
+
+| Evidence | Result | Scope |
+|---|---|---|
+| Strict RED | Failed | A steep-pitch test (35 degrees and more) hit `Player`; a serialized-mark-mesh test failed |
+| Final EditMode | **185 passed, 0 failed** | Unchanged count |
+| Final PlayMode | **59 passed, 0 failed** | Adds 5: leg hit zones from the real eye position, all visible body vertices covered, frame-by-frame leg coverage while animating, impact marks without runtime primitives, steep-downward shots not blocked by the player |
+| Phone log, diagnostic build | 30 of 32 shots hit `Player` | Observed by the assistant through `adb logcat` |
+
+Limits: the final fix (player layer) passed all tests but **has not been tested on the phone yet**; the user reported the red text gone on the diagnostic build, and the leg result with the layer fix is pending. The development-only shot log (`FIELD_OPS_SHOT`) stays in the code for now and prints nothing in release builds.
+
 ## Historical first-delivery evidence (before timed rounds)
 
 The earlier free-practice prototype passed **11 EditMode / 5 PlayMode** tests and built/installed/launched on a Motorola edge 60 fusion running Android 16. The user reported physical move/look/sprint/fire/marks/reset/language checks passing. The public screenshot is from that earlier delivery.

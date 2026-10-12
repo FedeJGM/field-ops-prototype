@@ -23,9 +23,10 @@ namespace FieldOps {
    for(int p=0;p<def.pellets;p++) {
     var ray=view.ViewportPointToRay(new Vector3(.5f,.5f));
     if(def.pellets>1) {var o=PelletPattern.Offset(p,def.pellets,def.spreadDegrees);ray.direction=(ray.direction+eye.right*o.x+eye.up*o.y).normalized;}
-    if(!Physics.Raycast(ray,out var hit,def.range,~(1<<2),QueryTriggerInteraction.Ignore))continue;
+    if(!Physics.Raycast(ray,out var hit,def.range,~(1<<2),QueryTriggerInteraction.Ignore)) {if(Debug.isDebugBuild)Debug.Log("FIELD_OPS_SHOT miss");continue;}
     var target=hit.collider.GetComponentInParent<TrainingTarget>();
-    if(target!=null&&target.ReceiveHit(hit,def.damage,!scored))scored=true;
+    bool accepted=target!=null&&target.ReceiveHit(hit,def.damage,!scored);if(accepted)scored=true;
+    if(Debug.isDebugBuild)Debug.Log("FIELD_OPS_SHOT hit="+hit.collider.name+" y="+hit.point.y.ToString("0.00")+" dist="+hit.distance.ToString("0.0")+" target="+(target!=null)+" accepted="+accepted);
    }
   }
   void LateUpdate() {

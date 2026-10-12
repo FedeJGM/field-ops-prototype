@@ -23,9 +23,10 @@ namespace FieldOps.Editor {
    var world=new GameObject("Training field — editable geometry").transform;
    EnvironmentBuilder.Build(world);
    var targetRoot=new GameObject("Training target — indestructible");targetRoot.transform.position=new Vector3(0,0,2);
-   var target=targetRoot.AddComponent<TrainingTarget>();target.impactMaterial=impact;var rig=new GameObject("Idle rig").transform;rig.SetParent(targetRoot.transform,false);target.idleRig=rig;
+   var target=targetRoot.AddComponent<TrainingTarget>();target.impactMaterial=impact;target.markMesh=Resources.GetBuiltinResource<Mesh>("Sphere.fbx");var rig=new GameObject("Idle rig").transform;rig.SetParent(targetRoot.transform,false);target.idleRig=rig;
    CharacterBuilder.Build(rig,target);
-   var player=new GameObject("Player");player.transform.position=new Vector3(0,.06f,-12);var controller=player.AddComponent<CharacterController>();controller.height=1.8f;controller.radius=.3f;controller.center=new Vector3(0,.9f,0);controller.stepOffset=.3f;
+   var player=new GameObject("Player");player.layer=2;   // Ignore Raycast: the camera sits inside the capsule, which would otherwise block shots aimed downward
+   player.transform.position=new Vector3(0,.06f,-12);var controller=player.AddComponent<CharacterController>();controller.height=1.8f;controller.radius=.3f;controller.center=new Vector3(0,.9f,0);controller.stepOffset=.3f;
    var cameraObject=new GameObject("First-person camera");cameraObject.tag="MainCamera";cameraObject.transform.SetParent(player.transform,false);cameraObject.transform.localPosition=new Vector3(0,1.65f,0);var cam=cameraObject.AddComponent<Camera>();cam.fieldOfView=68;cam.nearClipPlane=.03f;cam.farClipPlane=100;cam.clearFlags=CameraClearFlags.Skybox;cameraObject.AddComponent<AudioListener>();
    var weapon=new GameObject("Weapon holder").transform;weapon.SetParent(cameraObject.transform,false);weapon.localPosition=new Vector3(.28f,-.24f,.46f);
    var flash=GunPart("Muzzle flash",Vector3.zero,new Vector3(.09f,.09f,.08f),orange,weapon);flash.SetActive(false);
