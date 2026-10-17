@@ -1,8 +1,43 @@
-# Timed-training verification
+# Verification
 
-The local source now provides configurable **1–300-second** training rounds, a visible countdown, one point per successful target hit, frozen final results, replay and duration changes. The new flow was built into a fresh APK, installed on a physical Motorola edge 60 fusion (Android 16) and reported working by the user (see the device section below). The original free-practice evidence is historical.
+This file is the evidence log of the project. It starts with the current state and a map of the sections, then keeps **one section per feature** in the order the features were built, each with the strict RED -> GREEN evidence, what was observed by the assistant (adb, logs, captures), what the user reported after testing on the phone, the bugs found and the known limits. Evidence is never inflated: a result is labelled as proven by tests, observed, or user-reported.
 
-## Current source checks
+## Current state
+
+| Item | Value |
+|---|---|
+| Unity | **6000.0.70f1** (no packages, editor or pipeline upgrades; only the built-in `animation` module was enabled, with approval) |
+| EditMode tests | **298 passed, 0 failed** |
+| PlayMode tests | **101 passed, 0 failed** |
+| Test method | The scene is regenerated first (`Field Ops > Create or Rebuild Training Range`), then both suites run; PlayMode needs a graphics device, EditMode runs with `-nographics` |
+| Device | Motorola edge 60 fusion, Android 16, development build installed with `adb install -r` |
+| Latest APK | 41,972,867 bytes, SHA-256 `b4645607cce6cf664e6bebeb76764040bd244fc7535d3dd833625204f42ff303` |
+| Performance on the phone | about 60 FPS in short sessions (see the soldier and movement sections); no thermal, battery or long-session measurement is claimed |
+
+### Map of the sections
+
+| Feature | Section |
+|---|---|
+| Timed rounds (baseline suite) | the first three sections below (historical numbers) |
+| Ammunition and reload | Ammunition and manual reload |
+| Aim down sights and settings | Aim down sights and settings |
+| Sound | Sound effects, Per-weapon audio |
+| Configurable HUD | Configurable HUD layout |
+| Five weapons | Five selectable weapons with imported models |
+| Map, sky, FPS counter | Military training-base map, sky and FPS counter |
+| Soldier target and hit zones | Soldier target, Shot and hit-zone fixes |
+| Jump, slide, hop chain, title tab, movable language and FPS | Jump, slide, sprint mode, title tab and movable language/FPS |
+| Sprint sensitivity, sprint pose, forward-only sprint | Sprint sensitivity, sprint weapon pose and forward-only sprint |
+| Iron sights, sniper scope, bolt and pump cycle | Iron sights, sniper scope view and hand-worked action |
+
+### Known limits (summary)
+
+One phone and short sessions; the movement, pose and sight values are tuned by feel and are not matched to any commercial game; no hands are modelled; the two weapon-cycle sounds were not audibly checked by the assistant; the user reported that the phone checks passed.
+
+## Timed-round baseline: source checks (historical, 2026-10-11)
+
+These first sections describe the original timed-round iteration and its numbers (39 EditMode and 9 PlayMode tests at that time). The current totals are in the table above.
+
 
 | Evidence | Result | Scope |
 |---|---|---|
@@ -24,7 +59,7 @@ All launches used Unity **6000.0.70f1**. No packages, editor version or renderin
 - Configuration/results block touch movement/look/fire/sprint and desktop mouse capture. Finger roles are cleared; a held pointer cannot leak a shot into a new round. Focus loss and app pause are separate suspension causes: both must clear before active time resumes, and background time is excluded.
 - `PrototypeBuilder` saves real menu/input/button objects and references in the editable scene. Every serialized UGUI graphic retains `UiDefault.mat`; the existing UI/Default inclusion/prebuild validator remains in effect. Runtime hides the centered reticle in menus.
 
-## What the PlayMode tests establish
+## Timed-round baseline: what its PlayMode tests establish
 
 1. The saved scene opens at configuration with default 60. Numeric-field/start/replay/configure wiring exists, and the three rendered UI states have readable layout.
 2. Queued InputSystem touchscreen events focus the real InputField and click the real start button. Text is then set **programmatically** for invalid/300-second cases; this does not prove physical keyboard typing.
@@ -41,6 +76,7 @@ Intermediate checks found two harness assumptions, not bypassed gameplay failure
 Use Unity 6000.0.70f1 and substitute PROJECT/RESULTS/LOG with local paths:
 
 ```text
+Unity.exe -batchmode -nographics -quit -projectPath PROJECT -executeMethod FieldOps.Editor.PrototypeBuilder.Generate -logFile LOG   (regenerate the scene first; EditMode tests open the saved scene)
 Unity.exe -batchmode -nographics -projectPath PROJECT -runTests -testPlatform EditMode -testResults RESULTS -logFile LOG
 Unity.exe -batchmode -projectPath PROJECT -runTests -testPlatform PlayMode -testResults RESULTS -logFile LOG
 Unity.exe -batchmode -nographics -quit -projectPath PROJECT -executeMethod FieldOps.Editor.UiBuildValidation.Validate -logFile LOG
@@ -49,7 +85,7 @@ Unity.exe -batchmode -nographics -quit -projectPath PROJECT -buildTarget Android
 
 Do not append `-quit` to test-runner commands. The runner owns completion. A hidden batch Game view needs test-only input/focus settings; physical-device behavior must be checked separately. Scene regeneration overwrites the generated scene/materials: save custom variants under another name before rebuilding it.
 
-## Physical-device acceptance for the new APK (2026-10-11)
+## Timed-round baseline: physical-device acceptance (2026-10-11)
 
 Build: ARM64 IL2CPP OpenGL ES 3 development APK from commit `913cea2`, Unity 6000.0.70f1, build result Success. APK: 41,493,278 bytes; SHA-256 `70430E131DA739D63176035B36C822AB33B603A3AD42AB4A3A1854CF0B4C306C`. Saved scene on disk: SHA-256 `73810718D6F0B01463FDAA161C7C01E96290953A1A57DEAA42C17519D3A9A441`.
 

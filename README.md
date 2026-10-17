@@ -2,10 +2,10 @@
 
 **[English](#english) · [Español](#español)**
 
-![Gameplay on the phone: soldier target with amber impact marks, score, damage, timer, ammo and FPS counter, Spanish interface / Juego en el teléfono: blanco soldado con marcas de impacto ámbar, puntaje, daño, tiempo, munición y contador de FPS, interfaz en español](docs/images/android-gameplay.jpg)
+![Aiming through the assault rifle iron sights on the phone: soldier target with amber impact marks, score, damage, timer, ammo and FPS counter, Spanish interface / Apuntando por las miras de hierro del fusil de asalto en el teléfono: blanco soldado con marcas de impacto ámbar, puntaje, daño, tiempo, munición y contador de FPS, interfaz en español](docs/images/android-gameplay.jpg)
 
-*EN: screenshot taken on the Motorola edge 60 fusion (development build, hence the "Development Build" label) during a round with the sub-machine gun: 9 points, 135 damage, an amber mark on the soldier and 60 FPS.*
-*ES: captura tomada en el Motorola edge 60 fusion (compilación de desarrollo, de ahí la etiqueta "Development Build") durante una partida con el subfusil: 9 puntos, 135 de daño, una marca ámbar en el soldado y 60 FPS.*
+*EN: screenshot taken on the Motorola edge 60 fusion (development build, hence the "Development Build" label) while aiming through the assault rifle iron sights: 6 points, 150 damage, amber marks on the soldier, 60 FPS and the player's own button layout (AIM moved to the top-left).*
+*ES: captura tomada en el Motorola edge 60 fusion (compilación de desarrollo, de ahí la etiqueta "Development Build") apuntando por las miras de hierro del fusil de asalto: 6 puntos, 150 de daño, marcas ámbar en el soldado, 60 FPS y la disposición de botones propia del jugador (APUNTAR movido arriba a la izquierda).*
 
 ---
 
@@ -97,12 +97,14 @@ On the phone, a 4-minute development-build session with the soldier averaged 59.
 | Path | Purpose |
 |---|---|
 | `Assets/FieldOps/Scenes` | Editable training scene |
-| `Assets/FieldOps/Scripts` | Movement, input, weapons, ammunition, aiming, sound, target, round rules, settings and HUD |
+| `Assets/FieldOps/Scripts` | Movement (jump, slide, sprint), input, weapons, ammunition, aiming, scope view, weapon action cycle, sound, target, round rules, settings and HUD |
 | `Assets/FieldOps/Weapons` | Generated weapon definitions (stats and model per weapon) |
 | `Assets/FieldOps/ThirdParty` | Third-party assets with their notices (see [CREDITS.md](CREDITS.md)) |
 | `Assets/FieldOps/Audio` | Processed weapon sound effects with their notice (see [CREDITS.md](CREDITS.md)) |
 | `Assets/FieldOps/Animation` | Generated animator controller for the soldier target |
-| `Assets/FieldOps/Editor` | Scene generation, Android build and UI build validation |
+| `Assets/FieldOps/Materials` | Generated materials (environment, weapon sights, UI) |
+| `Assets/FieldOps/Textures` | Generated scope mask image (original, no third-party asset) |
+| `Assets/FieldOps/Editor` | Scene generation (map, soldier, weapon iron sights), Android build and UI build validation |
 | `Assets/FieldOps/Tests` | EditMode and PlayMode tests |
 | `Packages` | Pinned manifest and dependency lockfile |
 | `ProjectSettings` | Portable Unity project configuration |
@@ -210,12 +212,14 @@ En el teléfono, una sesión de 4 minutos con la compilación de desarrollo y el
 | Ruta | Propósito |
 |---|---|
 | `Assets/FieldOps/Scenes` | Escena de entrenamiento editable |
-| `Assets/FieldOps/Scripts` | Movimiento, entrada, armas, munición, apuntado, sonido, blanco, reglas de partida, ajustes e interfaz |
+| `Assets/FieldOps/Scripts` | Movimiento (salto, deslizamiento, sprint), entrada, armas, munición, apuntado, vista de scope, ciclo de acción del arma, sonido, blanco, reglas de partida, ajustes e interfaz |
 | `Assets/FieldOps/Weapons` | Definiciones de armas generadas (estadísticas y modelo de cada una) |
 | `Assets/FieldOps/ThirdParty` | Recursos de terceros con sus avisos (ver [CREDITS.md](CREDITS.md)) |
 | `Assets/FieldOps/Audio` | Efectos de sonido de armas procesados, con su aviso (ver [CREDITS.md](CREDITS.md)) |
 | `Assets/FieldOps/Animation` | Controlador de animación generado para el blanco soldado |
-| `Assets/FieldOps/Editor` | Generación de la escena, compilación para Android y validación de la interfaz |
+| `Assets/FieldOps/Materials` | Materiales generados (entorno, miras de las armas, interfaz) |
+| `Assets/FieldOps/Textures` | Imagen de la máscara del scope, generada (original, sin recursos de terceros) |
+| `Assets/FieldOps/Editor` | Generación de la escena (mapa, soldado, miras de hierro de las armas), compilación para Android y validación de la interfaz |
 | `Assets/FieldOps/Tests` | Pruebas EditMode y PlayMode |
 | `Packages` | Manifiesto fijado y archivo de bloqueo de dependencias |
 | `ProjectSettings` | Configuración portátil del proyecto de Unity |
