@@ -2,6 +2,11 @@ using NUnit.Framework;
 using UnityEngine;
 namespace FieldOps.Tests {
  public class HudLayoutTests {
+  [Test] public void CrouchIsAMovableButtonAndOlderSavedLayoutsStillLoad() {
+   var l=new HudLayout();Assert.Contains("crouch",HudLayout.Ids);Assert.IsTrue(l.Set("crouch",new Vector2(-700,300)));
+   var back=HudLayout.FromJson(l.ToJson());Assert.IsTrue(back.TryGet("crouch",out var c));Assert.AreEqual(new Vector2(-700,300),c);
+   var older=HudLayout.FromJson("{\"version\":1,\"entries\":[{\"id\":\"fire\",\"x\":-100,\"y\":200}]}");Assert.IsTrue(older.TryGet("fire",out var f));Assert.AreEqual(new Vector2(-100,200),f);Assert.IsFalse(older.TryGet("crouch",out var _),"A layout saved before the crouch button keeps the default place for it.");
+  }
   [Test] public void JumpAndSlideAreMovableButtons() { var l=new HudLayout();Assert.Contains("jump",HudLayout.Ids);Assert.Contains("slide",HudLayout.Ids);Assert.IsTrue(l.Set("jump",new Vector2(-500,230)));Assert.IsTrue(l.Set("slide",new Vector2(-500,120)));var back=HudLayout.FromJson(l.ToJson());Assert.IsTrue(back.TryGet("jump",out var j));Assert.AreEqual(new Vector2(-500,230),j);Assert.IsTrue(back.TryGet("slide",out var s));Assert.AreEqual(new Vector2(-500,120),s); }
   [Test] public void LanguageButtonAndFpsCounterAreMovableButSettingsIsNot() { var l=new HudLayout();Assert.Contains("language",HudLayout.Ids);Assert.Contains("fps",HudLayout.Ids);Assert.IsFalse(l.Set("settings",Vector2.zero));Assert.IsTrue(l.Set("language",new Vector2(-300,-400)));Assert.IsTrue(l.Set("fps",new Vector2(-450,-80)));var back=HudLayout.FromJson(l.ToJson());Assert.IsTrue(back.TryGet("language",out var a));Assert.AreEqual(new Vector2(-300,-400),a);Assert.IsTrue(back.TryGet("fps",out var b));Assert.AreEqual(new Vector2(-450,-80),b); }
   [Test] public void LayoutsSavedBeforeTheseButtonsExistedStillLoad() { var l=new HudLayout();l.Set("fire",new Vector2(-300,200));var back=HudLayout.FromJson(l.ToJson());Assert.IsTrue(back.TryGet("fire",out _));Assert.IsFalse(back.TryGet("language",out _));Assert.IsFalse(back.TryGet("fps",out _)); }

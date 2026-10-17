@@ -2,7 +2,7 @@ using UnityEngine;
 namespace FieldOps {
  // Every number that shapes the movement feel, in one place so it can be tuned on the phone.
  public sealed class MovementTuning {
-  public float walkSpeed=3.5f,sprintSpeed=6f;
+  public float walkSpeed=3.5f,sprintSpeed=6f,crouchSpeed=2f;
   public float jumpHeight=1f,gravity=9.81f;
   public float jumpBuffer=.12f,coyoteTime=.1f;
   public float hopWindow=.15f,hopGain=.4f,maxHopSpeed=7.5f;
@@ -12,7 +12,7 @@ namespace FieldOps {
  public enum MoveState {Grounded,Airborne,Sliding}
  public struct MoveInput {
   public Vector3 Wish;   // desired direction in world space, magnitude 0..1
-  public bool Sprint,JumpPressed,JumpHeld,SlidePressed,Grounded,CanStand;
+  public bool Sprint,JumpPressed,JumpHeld,SlidePressed,CrouchPressed,Grounded,CanStand;
  }
  // Pure movement rules (no Unity physics): the motor feeds it ground contact and headroom, and applies the velocity it returns.
  public sealed class MovementModel {
@@ -25,12 +25,13 @@ namespace FieldOps {
   public int HopCount { get; private set; }
   public bool JustJumped { get; private set; }
   public bool JustLanded { get; private set; }
-  public bool Crouched { get { return State==MoveState.Sliding; } }
+  public bool Crouching { get; private set; }
+  public bool Crouched { get { return State==MoveState.Sliding||Crouching; } }
   float landedAgo,bufferLeft,coyoteLeft,slideTime,cooldownLeft;
   // Feedback from the physics step: a ceiling stops the rise, a wall replaces the speed the model assumed.
   public void CancelRise() { if(VerticalVelocity>0)VerticalVelocity=0; }
   public void SetHorizontalVelocity(Vector3 velocity) { HorizontalVelocity=new Vector3(velocity.x,0,velocity.z); }
-  public void Reset() { State=MoveState.Grounded;HorizontalVelocity=Vector3.zero;VerticalVelocity=0;HopCount=0;JustJumped=JustLanded=false;landedAgo=999f;bufferLeft=coyoteLeft=slideTime=cooldownLeft=0; }
+  public void Reset() { State=MoveState.Grounded;HorizontalVelocity=Vector3.zero;VerticalVelocity=0;HopCount=0;JustJumped=JustLanded=false;landedAgo=999f;bufferLeft=coyoteLeft=slideTime=cooldownLeft=0;Crouching=false; }
 
   public void Step(MoveInput input,float dt) {
    JustJumped=JustLanded=false;landedAgo+=dt;cooldownLeft=Mathf.Max(0,cooldownLeft-dt);
@@ -42,11 +43,16 @@ namespace FieldOps {
    } else {
     coyoteLeft=Mathf.Max(0,coyoteLeft-dt);
     if(State==MoveState.Grounded)State=MoveState.Airborne;
+    Crouching=false;   // the body stands in the air
    }
    var wish=Vector3.ClampMagnitude(new Vector3(input.Wish.x,0,input.Wish.z),1f);
 
    if(bufferLeft>0&&CanJump(onGround,input)) {Jump();return;}
-   if(State==MoveState.Grounded&&input.SlidePressed&&cooldownLeft<=0&&Speed>=Tuning.sprintSpeed*Tuning.slideMinSpeedFactor&&onGround) {
+   if(input.CrouchPressed&&State==MoveState.Grounded&&onGround) {
+    // A press crouches; the next press stands up again, but only when there is room above.
+    if(!Crouching)Crouching=true;else if(input.CanStand)Crouching=false;
+   }
+   if(State==MoveState.Grounded&&!Crouching&&input.SlidePressed&&cooldownLeft<=0&&Speed>=Tuning.sprintSpeed*Tuning.slideMinSpeedFactor&&onGround) {
     State=MoveState.Sliding;slideTime=0;HorizontalVelocity=HorizontalVelocity.normalized*Tuning.sprintSpeed*Tuning.slideBoost;VerticalVelocity=-2f;return;
    }
    switch(State) {
@@ -58,12 +64,12 @@ namespace FieldOps {
 
   bool CanJump(bool onGround,MoveInput input) {
    if(State==MoveState.Sliding)return input.CanStand;
-   if(State==MoveState.Grounded)return onGround;
+   if(State==MoveState.Grounded)return onGround&&(!Crouching||input.CanStand);
    return coyoteLeft>0;   // walked off an edge a moment ago
   }
 
   void Jump() {
-   bool fromSlide=State==MoveState.Sliding;
+   bool fromSlide=State==MoveState.Sliding;Crouching=false;
    if(fromSlide) {HopCount=1;cooldownLeft=Tuning.slideCooldown;}   // the cancel itself counts as the first hop, with no extra gain
    else if(landedAgo<=Tuning.hopWindow) {
     HopCount++;float speed=Speed;
@@ -75,7 +81,7 @@ namespace FieldOps {
   void Walk(Vector3 wish,MoveInput input,float dt) {
    VerticalVelocity=-2f;
    if(landedAgo>Tuning.hopWindow) {   // inside the hop window the landing keeps its momentum; after it, friction applies
-    HopCount=0;var target=wish*(input.Sprint?Tuning.sprintSpeed:Tuning.walkSpeed);
+    HopCount=0;var target=wish*(Crouching?Tuning.crouchSpeed:input.Sprint?Tuning.sprintSpeed:Tuning.walkSpeed);
     HorizontalVelocity=Vector3.MoveTowards(HorizontalVelocity,target,(Speed>target.magnitude?Tuning.groundDecel:Tuning.groundAccel)*dt);
    }
   }

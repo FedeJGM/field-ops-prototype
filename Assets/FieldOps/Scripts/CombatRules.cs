@@ -63,6 +63,7 @@ namespace FieldOps {
     case "stick": return "JOYSTICK";
     case "button": return spanish?"BOTÓN":"BUTTON";
     case "slide": return spanish?"DESLIZAR":"SLIDE";
+    case "crouch": return spanish?"AGACHARSE":"CROUCH";
     case "move": return spanish?"MOVER":"MOVE";
     case "look": return spanish?"DESLIZA PARA MIRAR":"SWIPE TO LOOK";
     case "hits": return spanish?"IMPACTOS":"HITS";

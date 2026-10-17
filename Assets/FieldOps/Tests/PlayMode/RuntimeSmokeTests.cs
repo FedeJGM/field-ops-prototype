@@ -184,7 +184,7 @@ namespace FieldOps.Tests {
   [UnityTest] public IEnumerator OverlappingButtonsBlockSavingUntilSeparated() {
    yield return OpenLayoutEditor();var aim=Point(hud.aim);var fire=Point(hud.fire);yield return Drag(36,aim,fire);
    Assert.IsFalse(hud.saveLayoutButton.interactable);Assert.AreEqual(GameText.Get("layoutOverlap",false),hud.layoutHint.text);hud.saveLayoutButton.onClick.Invoke();yield return null;Assert.IsTrue(hud.EditingLayout,"Saving must be refused while buttons overlap.");Assert.IsFalse(PlayerPrefs.HasKey("hudLayout"));
-   var stuck=Point(hud.aim);yield return Drag(37,stuck,stuck+new Vector2(-500,200)*CanvasScale());Assert.IsTrue(hud.saveLayoutButton.interactable);Assert.AreEqual(GameText.Get("layoutHint",false),hud.layoutHint.text);
+   var stuck=Point(hud.aim);yield return Drag(37,stuck,stuck+new Vector2(-740,130)*CanvasScale());Assert.IsTrue(hud.saveLayoutButton.interactable);Assert.AreEqual(GameText.Get("layoutHint",false),hud.layoutHint.text);
    hud.cancelLayoutButton.onClick.Invoke();yield return null;
   }
   [UnityTest] public IEnumerator ButtonsCannotBeDraggedOutsideTheScreen() {
@@ -391,6 +391,56 @@ namespace FieldOps.Tests {
   void StopRunning() {Touch(70,UnityEngine.InputSystem.TouchPhase.Ended,StickForward());}
   IEnumerator TapButton(int id,RectTransform button) {var p=Point(button);Touch(id,UnityEngine.InputSystem.TouchPhase.Began,p);yield return null;Touch(id,UnityEngine.InputSystem.TouchPhase.Ended,p);yield return null;}
   IEnumerator OpenFieldRound(float z=-18f) {Assert.IsTrue(session.StartRound("120"));yield return null;PlacePlayer(new Vector3(0,.06f,z));yield return new WaitForSeconds(.4f);}
+  [UnityTest] public IEnumerator CrouchButtonExistsIsLabelledAndShownDuringARound() {
+   Assert.IsNotNull(hud.crouch);Assert.IsNotNull(hud.crouchLabel);Assert.AreEqual("CROUCH",hud.crouchLabel.text);Assert.AreEqual("Crouch touch button",hud.crouch.name);
+   Assert.AreSame(hud.jump.GetComponent<UnityEngine.UI.Image>().material,hud.crouch.GetComponent<UnityEngine.UI.Image>().material,"The new button uses the serialized UI material.");
+   hud.languageButton.onClick.Invoke();yield return null;Assert.AreEqual("AGACHARSE",hud.crouchLabel.text);hud.languageButton.onClick.Invoke();
+   Assert.IsTrue(session.StartRound("60"));yield return null;Assert.IsTrue(hud.crouch.gameObject.activeInHierarchy);
+  }
+  [UnityTest] public IEnumerator CrouchButtonSetsPressedForASingleFrame() {
+   motor.enabled=false;Assert.IsTrue(session.StartRound("60"));yield return null;var crouch=Point(hud.crouch);
+   Touch(120,UnityEngine.InputSystem.TouchPhase.Began,crouch);yield return null;Assert.IsTrue(input.CrouchPressed);yield return null;yield return null;Assert.IsFalse(input.CrouchPressed);Assert.IsFalse(input.Fire,"The crouch button is not a fire or look touch.");Assert.IsFalse(input.SlidePressed);Assert.IsFalse(input.JumpPressed);
+   Touch(120,UnityEngine.InputSystem.TouchPhase.Ended,crouch);yield return null;
+  }
+  [UnityTest] public IEnumerator TappingCrouchLowersTheBodyAndTheViewAndTappingAgainStandsUp() {
+   yield return OpenFieldRound();var camera=Camera.main.transform;var controller=motor.GetComponent<CharacterController>();
+   yield return TapButton(121,hud.crouch);yield return new WaitForSeconds(.4f);
+   Assert.IsTrue(motor.Model.Crouching);Assert.AreEqual(1.2f,controller.height,.03f,"The body shrinks to the crouch height.");Assert.AreEqual(1.05f,camera.localPosition.y,.03f,"The view drops to the crouch eye height.");
+   yield return TapButton(122,hud.crouch);yield return new WaitForSeconds(.4f);
+   Assert.IsFalse(motor.Model.Crouching);Assert.AreEqual(1.8f,controller.height,.03f);Assert.AreEqual(1.65f,camera.localPosition.y,.03f);
+  }
+  // The preview switches the canvas to camera space, so it runs in its own test and never before touch input.
+  [UnityTest] public IEnumerator CrouchedViewPreviewIsCaptured() {
+   yield return OpenFieldRound();yield return TapButton(131,hud.crouch);yield return new WaitForSeconds(.4f);Assert.IsTrue(motor.Model.Crouching);yield return CapturePreview("crouch-view.bmp");
+  }
+  [UnityTest] public IEnumerator CrouchedPlayerWalksSlowlyEvenWithTheStickAtItsEdge() {
+   yield return OpenFieldRound();yield return TapButton(123,hud.crouch);yield return new WaitForSeconds(.3f);
+   yield return StartRunning();yield return new WaitForSeconds(.8f);
+   Assert.IsTrue(motor.Model.Crouching,"Pushing the stick to the edge does not stand the player up.");Assert.AreEqual(2f,motor.Model.Speed,.15f,"A crouched player walks at the crouch speed, not the sprint speed.");Assert.AreNotEqual(MoveState.Sliding,motor.Model.State);
+   StopRunning();yield return null;
+  }
+  [UnityTest] public IEnumerator JumpingFromACrouchStandsTheBodyBackUp() {
+   yield return OpenFieldRound();yield return TapButton(124,hud.crouch);yield return new WaitForSeconds(.4f);Assert.IsTrue(motor.Model.Crouching);
+   yield return TapButton(125,hud.jump);yield return new WaitForSeconds(.3f);
+   Assert.IsFalse(motor.Model.Crouching);Assert.AreEqual(MoveState.Airborne,motor.Model.State);Assert.Greater(motor.Height,1.5f,"The body is rising back to full height.");
+  }
+  [UnityTest] public IEnumerator UnderALowCeilingTheCrouchStaysUntilThereIsRoomToStand() {
+   var ceiling=GameObject.CreatePrimitive(PrimitiveType.Cube);ceiling.name="Test crouch ceiling";ceiling.transform.position=new Vector3(0,1.55f,-11f);ceiling.transform.localScale=new Vector3(6,.2f,4);   // z -13 to -9, underside at 1.45 m: room to crouch (1.2 m plus the controller skin), not to stand
+   yield return OpenFieldRound(-14.5f);var controller=motor.GetComponent<CharacterController>();yield return TapButton(126,hud.crouch);yield return new WaitForSeconds(.3f);Assert.IsTrue(motor.Model.Crouching);
+   yield return StartRunning();float guard=Time.time+6f;while(motor.transform.position.z<-11.6f&&Time.time<guard)yield return null;StopRunning();yield return new WaitForSeconds(.3f);
+   Assert.Greater(motor.transform.position.z,-12.5f,"Under the ceiling.");Assert.Less(motor.transform.position.z,-9.5f);
+   yield return TapButton(127,hud.crouch);yield return new WaitForSeconds(.5f);
+   Assert.IsTrue(motor.Model.Crouching,"No room above: it stays crouched.");Assert.Less(controller.height,1.3f);
+   yield return StartRunning();guard=Time.time+8f;while(motor.transform.position.z<-8f&&Time.time<guard)yield return null;StopRunning();yield return new WaitForSeconds(.3f);
+   yield return TapButton(128,hud.crouch);yield return new WaitForSeconds(.5f);
+   Assert.IsFalse(motor.Model.Crouching,"Past the ceiling a new tap stands up.");Assert.AreEqual(1.8f,controller.height,.05f);Object.Destroy(ceiling);
+  }
+  [UnityTest] public IEnumerator CrouchButtonCanBeMovedInTheLayoutEditorAndTheLayoutIsStored() {
+   yield return OpenLayoutEditor();var start=hud.crouch.anchoredPosition;var from=Point(hud.crouch);yield return Drag(129,from,from+new Vector2(-300,0)*CanvasScale());
+   Assert.Greater(Mathf.Abs(start.x-hud.crouch.anchoredPosition.x),50f,"The button follows the finger.");Assert.IsTrue(hud.saveLayoutButton.interactable);hud.saveLayoutButton.onClick.Invoke();yield return null;
+   StringAssert.Contains("crouch",PlayerPrefs.GetString("hudLayout"));
+   yield return OpenLayoutEditor();hud.resetLayoutButton.onClick.Invoke();yield return null;hud.saveLayoutButton.onClick.Invoke();yield return null;Assert.AreEqual(start.x,hud.crouch.anchoredPosition.x,.01f);
+  }
   [UnityTest] public IEnumerator JumpLiftsThePlayerAboutOneMeterAndItLandsAgain() {
    yield return OpenFieldRound();float start=motor.transform.position.y;float max=start;yield return TapButton(72,hud.jump);
    float end=Time.time+1.6f;while(Time.time<end) {max=Mathf.Max(max,motor.transform.position.y);yield return null;}

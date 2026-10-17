@@ -7,11 +7,11 @@ This file is the evidence log of the project. It starts with the current state a
 | Item | Value |
 |---|---|
 | Unity | **6000.0.70f1** (no packages, editor or pipeline upgrades; only the built-in `animation` module was enabled, with approval) |
-| EditMode tests | **298 passed, 0 failed** |
-| PlayMode tests | **101 passed, 0 failed** |
+| EditMode tests | **313 passed, 0 failed** |
+| PlayMode tests | **109 passed, 0 failed** |
 | Test method | The scene is regenerated first (`Field Ops > Create or Rebuild Training Range`), then both suites run; PlayMode needs a graphics device, EditMode runs with `-nographics` |
 | Device | Motorola edge 60 fusion, Android 16, development build installed with `adb install -r` |
-| Latest APK | 41,972,867 bytes, SHA-256 `b4645607cce6cf664e6bebeb76764040bd244fc7535d3dd833625204f42ff303` |
+| Latest APK | 41,972,867 bytes, SHA-256 `d66d7ea00d4584d96d97171b7ef028253805efede96e2646b17396c46a5d4671` (the size is the same as the previous build, so it is not evidence of anything; the hash is) |
 | Performance on the phone | about 60 FPS in short sessions (see the soldier and movement sections); no thermal, battery or long-session measurement is claimed |
 
 ### Map of the sections
@@ -29,6 +29,7 @@ This file is the evidence log of the project. It starts with the current state a
 | Jump, slide, hop chain, title tab, movable language and FPS | Jump, slide, sprint mode, title tab and movable language/FPS |
 | Sprint sensitivity, sprint pose, forward-only sprint | Sprint sensitivity, sprint weapon pose and forward-only sprint |
 | Iron sights, sniper scope, bolt and pump cycle | Iron sights, sniper scope view and hand-worked action |
+| Crouch button | Crouch button |
 
 ### Known limits (summary)
 
@@ -391,6 +392,27 @@ Eighth step of the second round of features. After testing the sprint build the 
 Bugs found by the phone and by the tests, all fixed: (1) **the assault rifle shot lower than it aimed.** The cause was mine: when the long guns were moved forward at the hip, I placed their sights with the old model coordinates, so on the rifle the front tower stood on the gas tube and rose about 4 cm above the sight line (the post even had a negative height), and the user aimed with the tall post while the shot leaves from the screen centre. Measured with a temporary diagnostic that printed viewport positions of every part; sights are now placed with the model coordinates plus the hold shift, and tests check that no front part rises above the sight line and that the sights keep their place on the receiver and barrel. My first alignment test only measured the single sight-line point, which is why it missed this. (2) The sniper scope sat 1.5 cm off the model's middle line, found in the capture and then covered by a test. (3) The orange front tip of the rifle "vanished": it had the same size as the dark post under it, so their faces shared planes and flickered (z-fighting); accent parts are now slightly larger and a test looks for coplanar faces in every pair of sight parts, which also found the same problem in the pistol and sub-machine gun rear bars. (4) The scope overlay's side bars were computed from a layout width that is stale in the 16:9 capture of a 4:3 test window; they are now anchored to the screen edges.
 
 APKs: sights and scope `c57c6f5a4e65064d9f29c7c733ae9dbf50899de8e3729394397f7538076fe90a`; placement fix `d55a51e0c1c4bad5173eecb79935a09cc32aab79a80089ad092501703847c63a`; with the cycle `3a67262603da96dc6efb6b707f7d8a79e0104f778c097d8ed7618dc4b9717da7`; final `b4645607cce6cf664e6bebeb76764040bd244fc7535d3dd833625204f42ff303` (all 41,972,867 bytes). Observed by the assistant: each installed with `adb install -r`, the activity was the top resumed activity and `adb logcat` showed no `NullReference` or other exception. Reported by the user after testing on the phone: the sights and scope build passed except the assault rifle shooting lower; the placement fix and the cycle build passed except the vanishing orange tip; the final build passed all checks. Limits: one short session on one phone, the cycle sounds were not audibly checked by the assistant, the pose angles, scope circle size and eye distances are tuned by feel, and no hands are modelled.
+
+## Crouch button (2026-10)
+
+Ninth step of the second round of features. The user asked for a button to crouch. Decisions (user, in a plan): a tap toggles the crouch, and crouching only lowers the view and slows the walk (no recoil change). The rest was my design and is documented as such: crouched body 1.2 m, camera 1.05 m, walk 2 m/s (tuned by feel, not matched to any game); sprint and slide are not available while crouched, so pushing the joystick to its edge only walks; jumping stands up (and is ignored under a low ceiling); the player is never crouched in the air; pressing crouch during a slide does nothing; the editor key is C and the slide stays on Left Ctrl.
+
+**Implementation.** `MovementModel` gets `Crouching`, `crouchSpeed` and a `CrouchPressed` input (pure rules, no physics); `FirstPersonMotor` picks body height and eye height from three postures (slide, crouch, stand) and asks for room above before standing; `PrototypeInput` reads the new button and the C key; `PrototypeBuilder` creates the button above JUMP; `HudLayout` gets the `crouch` id (layouts saved before it still load); `GameText` gets `crouch` (CROUCH / AGACHARSE).
+
+| Evidence | Result | Scope |
+|---|---|---|
+| RED (EditMode) | 11 of 81 tests of `MovementModelTests`, `HudLayoutTests` and `CombatRulesTests` failed against stubs; 4 of the new tests passed against the stubs: the tuning check (the stub already held the value) and 3 that passed by chance, which were strengthened to assert that the crouch is on before checking what follows | Toggle, speed, sprint ignored, room above, jump, ledge, slide, reset, layout id, text in both languages |
+| RED (PlayMode) | **Not run separately.** The 7 PlayMode tests were written before the code but first ran after it | Honest limit of this step |
+| Final EditMode | **313 passed, 0 failed** | Adds 15: crouch speed, toggle on and off, crouched walking speed, sprint ignored, standing restores speeds, no crouch in the air or during a slide, no slide while crouched, standing needs room, jump from a crouch (and blocked under a low ceiling), ledge, reset, layout id with an older saved layout, labels in both languages |
+| Final PlayMode | **109 passed, 0 failed** | Adds 8: the button exists with its label and the serialized UI material, pressed lasts one frame and is not a fire or look touch, tapping lowers the body to 1.2 m and the camera to 1.05 m and a second tap stands up, a crouched player at the stick edge walks at 2 m/s without standing, jumping from a crouch stands up, under a low ceiling the crouch stays until there is room, the button can be moved and saved in the layout editor, a crouched-view preview capture |
+| Editor render previews | Visually checked | The layout with the CROUCH button above JUMP and the lowered view |
+| Phone | User-reported: all checks passed | Button position and label, toggle, slow walk, no sprint or slide, jump from a crouch, aiming and shooting, layout editing, Spanish label |
+
+Problems found by the first PlayMode run, both in my tests and not in the game: (1) an existing layout test dropped the aim button on the spot where the new CROUCH button sits, so saving was refused; the drop point was moved. (2) My low-ceiling test used a ceiling underside at 1.3 m, which a 1.2 m crouch cannot pass because the character controller adds a 0.08 m skin and the player stands at 0.06 m; the ceiling was moved to 1.45 m, still too low to stand. A preview capture also switches the canvas to camera space and broke the second tap, so the capture has its own test.
+
+Not covered by an automated test: the C key (keyboard input cannot be simulated in the same way as the queued touches) and any measurement of the crouch on the phone beyond the user's report. No temporary probe was left in the repository. Regenerating the scene reorders ids inside the generated assets, so the commit includes that diff.
+
+APK: `d66d7ea00d4584d96d97171b7ef028253805efede96e2646b17396c46a5d4671`.
 
 ## Historical first-delivery evidence (before timed rounds)
 

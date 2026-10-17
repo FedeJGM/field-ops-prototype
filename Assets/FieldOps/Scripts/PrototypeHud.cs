@@ -4,9 +4,9 @@ using UnityEngine;
 using UnityEngine.UI;
 namespace FieldOps {
  public sealed class PrototypeHud : MonoBehaviour {
-  public RectTransform safeRoot, joystick, stick, fire, sprint, reload, aim, jump, slide;public ScopeOverlay scope;public CanvasGroup headerGroup;public Text settingsSubtitle;public Button sprintSensButton;public Text sprintSensLabel;public Button sprintModeButton;public Text sprintModeLabel;public bool SprintByJoystick { get; private set; }public SprintSensitivity SprintLevel { get; private set; }
+  public RectTransform safeRoot, joystick, stick, fire, sprint, reload, aim, jump, slide, crouch;public ScopeOverlay scope;public CanvasGroup headerGroup;public Text settingsSubtitle;public Button sprintSensButton;public Text sprintSensLabel;public Button sprintModeButton;public Text sprintModeLabel;public bool SprintByJoystick { get; private set; }public SprintSensitivity SprintLevel { get; private set; }
   public Button languageButton, resetButton, startButton, replayButton, configureButton;
-  public Text jumpLabel, slideLabel, title, status, moveLabel, lookLabel, fireLabel, sprintLabel, resetLabel, hitLabel, help;
+  public Text jumpLabel, slideLabel, crouchLabel, title, status, moveLabel, lookLabel, fireLabel, sprintLabel, resetLabel, hitLabel, help;
   public Text roundTitle,durationLabel,durationError,scoreRule,timerLabel,resultTitle,resultScore;
   public GameObject menuBlocker,configurationPanel,resultsPanel,crosshair;
   public InputField durationInput;
@@ -37,7 +37,7 @@ namespace FieldOps {
    startButton.onClick.AddListener(StartSelectedRound);replayButton.onClick.AddListener(Replay);configureButton.onClick.AddListener(Configure);
    durationInput.onValueChanged.AddListener(_=>{if(invalidDuration){invalidDuration=false;Refresh();}});
    resetButton.gameObject.SetActive(false);durationInput.text=session.Round.DurationSeconds.ToString(CultureInfo.InvariantCulture);Refresh();UpdateSafeArea();
-   movable=new Dictionary<string,RectTransform>{{"joystick",joystick},{"fire",fire},{"reload",reload},{"aim",aim},{"sprint",sprint},{"jump",jump},{"slide",slide},{"language",(RectTransform)languageButton.transform},{"fps",fpsLabel.rectTransform}};
+   movable=new Dictionary<string,RectTransform>{{"joystick",joystick},{"fire",fire},{"reload",reload},{"aim",aim},{"sprint",sprint},{"jump",jump},{"slide",slide},{"crouch",crouch},{"language",(RectTransform)languageButton.transform},{"fps",fpsLabel.rectTransform}};
    foreach(var pair in movable)defaultPositions[pair.Key]=pair.Value.anchoredPosition;
    editLayoutButton.onClick.AddListener(BeginEditLayout);saveLayoutButton.onClick.AddListener(()=>SaveLayout());foreach(var selector in Selectors()) {selector.prev.onClick.AddListener(()=>ChangeWeapon(-1));selector.next.onClick.AddListener(()=>ChangeWeapon(1));}resetLayoutButton.onClick.AddListener(ResetLayout);cancelLayoutButton.onClick.AddListener(CancelLayout);layoutPanel.SetActive(false);
    Canvas.ForceUpdateCanvases();ApplySavedLayout();
@@ -142,7 +142,7 @@ namespace FieldOps {
   }
   void ToggleLanguage() {spanish=!spanish;PlayerPrefs.SetInt("language",spanish?1:0);Refresh();}
   void Refresh() {
-   title.text=settingsSubtitle.text="FIELD OPS / PROTOTYPE";moveLabel.text=GameText.Get("move",spanish);lookLabel.text=GameText.Get("look",spanish);fireLabel.text=GameText.Get("fire",spanish);sprintLabel.text=GameText.Get("sprint",spanish);jumpLabel.text=GameText.Get("jump",spanish);slideLabel.text=GameText.Get("slide",spanish);resetLabel.text=GameText.Get("reset",spanish);help.text=GameText.Get("help",spanish);languageButton.GetComponentInChildren<Text>().text=spanish?"ENGLISH":"ESPAÑOL";
+   title.text=settingsSubtitle.text="FIELD OPS / PROTOTYPE";moveLabel.text=GameText.Get("move",spanish);lookLabel.text=GameText.Get("look",spanish);fireLabel.text=GameText.Get("fire",spanish);sprintLabel.text=GameText.Get("sprint",spanish);jumpLabel.text=GameText.Get("jump",spanish);slideLabel.text=GameText.Get("slide",spanish);crouchLabel.text=GameText.Get("crouch",spanish);resetLabel.text=GameText.Get("reset",spanish);help.text=GameText.Get("help",spanish);languageButton.GetComponentInChildren<Text>().text=spanish?"ENGLISH":"ESPAÑOL";
    roundTitle.text=GameText.Get("roundTitle",spanish);durationLabel.text=GameText.Get("duration",spanish);scoreRule.text=GameText.Get("scoreRule",spanish);durationError.text=invalidDuration?GameText.Get("durationError",spanish):"";startButton.GetComponentInChildren<Text>().text=GameText.Get("start",spanish);replayButton.GetComponentInChildren<Text>().text=GameText.Get("replay",spanish);configureButton.GetComponentInChildren<Text>().text=GameText.Get("configure",spanish);resultTitle.text=GameText.Get("finished",spanish);reloadLabel.text=GameText.Get("reload",spanish);RefreshSettingsText();RefreshWeaponText();RefreshRound();
   }
   void RefreshRound() {
@@ -150,7 +150,7 @@ namespace FieldOps {
    // The header also doubles as the paused notice, so it stays visible while the round is suspended.
    headerGroup.alpha=active&&session.Round.Suspended?1f:TitleTab.Alpha(session.Round.DurationSeconds-session.Round.RemainingSeconds,active);
    bool aiming=active&&rifle.Aim.Aiming;crosshair.SetActive(active&&(!aiming||GameSettings.KeepCrossWhileAiming)&&rifle.ScopeBlend<.5f);scope.SetBlend(active?rifle.ScopeBlend:0f);aim.gameObject.SetActive(show);menuBlocker.SetActive(!active&&!editing);configurationPanel.SetActive(session.Round.Phase==RoundPhase.Configuration&&!editing);resultsPanel.SetActive(session.Round.Phase==RoundPhase.Results&&!editing);
-   joystick.gameObject.SetActive(show);moveLabel.gameObject.SetActive(show);fire.gameObject.SetActive(show);sprint.gameObject.SetActive(show&&!SprintByJoystick);jump.gameObject.SetActive(show);slide.gameObject.SetActive(show);lookLabel.gameObject.SetActive(active);help.gameObject.SetActive(active&&!Application.isMobilePlatform);hitLabel.gameObject.SetActive(active);timerLabel.gameObject.SetActive(active);reload.gameObject.SetActive(show);ammoLabel.gameObject.SetActive(show);
+   joystick.gameObject.SetActive(show);moveLabel.gameObject.SetActive(show);fire.gameObject.SetActive(show);sprint.gameObject.SetActive(show&&!SprintByJoystick);jump.gameObject.SetActive(show);slide.gameObject.SetActive(show);crouch.gameObject.SetActive(show);lookLabel.gameObject.SetActive(active);help.gameObject.SetActive(active&&!Application.isMobilePlatform);hitLabel.gameObject.SetActive(active);timerLabel.gameObject.SetActive(active);reload.gameObject.SetActive(show);ammoLabel.gameObject.SetActive(show);
    ammoLabel.text=rifle.Ammo.IsReloading?GameText.Get("reloading",spanish):GameText.Get("ammo",spanish)+" "+rifle.Ammo.Count+" / ∞";reload.GetComponent<Image>().color=rifle.Ammo.IsReloading?new Color(.5f,.5f,.5f,.6f):(rifle.Ammo.IsEmpty?new Color(.85f,.25f,.2f,.9f):new Color(.12f,.2f,.28f,.85f));
    status.text=GameText.Get(session.Round.Suspended&&active?"paused":"status",spanish);
    hitLabel.text=GameText.Get("score",spanish)+": "+session.Round.Score+"   |   "+GameText.Get("damage",spanish)+": "+target.Damage.TotalDamage;

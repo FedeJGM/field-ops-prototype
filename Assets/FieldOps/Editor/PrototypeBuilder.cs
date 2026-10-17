@@ -114,6 +114,7 @@ namespace FieldOps.Editor {
    hud.sprint=Panel("Sprint touch button",safe,new Vector2(1,0),new Vector2(-365,115),new Vector2(180,85),new Color(.15f,.22f,.15f,.85f));hud.sprintLabel=Label("Sprint label",hud.sprint,new Vector2(.5f,.5f),Vector2.zero,new Vector2(180,40),23);
    hud.jump=Panel("Jump touch button",safe,new Vector2(1,0),new Vector2(-565,235),new Vector2(180,100),new Color(.12f,.2f,.28f,.85f));hud.jumpLabel=Label("Jump label",hud.jump,new Vector2(.5f,.5f),Vector2.zero,new Vector2(170,40),23);
    hud.slide=Panel("Slide touch button",safe,new Vector2(1,0),new Vector2(-565,120),new Vector2(180,85),new Color(.15f,.22f,.15f,.85f));hud.slideLabel=Label("Slide label",hud.slide,new Vector2(.5f,.5f),Vector2.zero,new Vector2(170,40),23);
+   hud.crouch=Panel("Crouch touch button",safe,new Vector2(1,0),new Vector2(-565,350),new Vector2(180,85),new Color(.15f,.22f,.15f,.85f));hud.crouchLabel=Label("Crouch label",hud.crouch,new Vector2(.5f,.5f),Vector2.zero,new Vector2(170,40),23);
    hud.lookLabel=Label("Look hint",safe,new Vector2(1,.5f),new Vector2(-245,0),new Vector2(400,40),20);hud.lookLabel.color=new Color(1,1,1,.55f);
    hud.languageButton=MenuButton("Language",safe,new Vector2(1,1),new Vector2(-130,-48),new Vector2(210,60));hud.resetButton=MenuButton("Reset",safe,new Vector2(1,1),new Vector2(-130,-123),new Vector2(210,60));hud.resetLabel=hud.resetButton.GetComponentInChildren<Text>();
    hud.crosshair=CreateReticle(canvas.transform);hud.scope=CreateScopeOverlay(canvas.transform);
