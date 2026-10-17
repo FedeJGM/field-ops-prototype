@@ -36,14 +36,14 @@ namespace FieldOps.Editor {
    var hud=CreateHud(target,session,rifle);input.hud=hud;
    Configure();EditorSceneManager.SaveScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene(),ScenePath);EditorBuildSettings.scenes=new[]{new EditorBuildSettingsScene(ScenePath,true)};AssetDatabase.SaveAssets();Debug.Log("FIELD_OPS_SCENE_GENERATED "+ScenePath);
   }
-  struct WeaponSpec {public string key,fbx,audio;public float length;public Vector3 hold,aim;public int mag;public float interval;public int damage,pellets;public float spread,range,kick,fov;}
+  struct WeaponSpec {public string key,fbx,audio;public float length;public Vector3 hold,aim;public int mag;public float interval;public int damage,pellets;public float spread,range,kick,fov;public bool scope;public bool manual;public float cycleRoll,cyclePitch,cyclePull,cycleSoundStart;public string cycleAudio;}
   // Generic names and stats; models come from the credited CC0 pack (see CREDITS.md). The default is the assault rifle.
   static readonly WeaponSpec[] WeaponSpecs={
    new WeaponSpec{key="weaponPistol",fbx="Pistol_1",audio="pistol",length=.24f,hold=new Vector3(0,.02f,0),aim=new Vector3(-.28f,0,-.03f),mag=12,interval=.30f,damage=20,pellets=1,spread=0,range=60,kick=.06f,fov=50},
-   new WeaponSpec{key="weaponRifle",fbx="AssaultRifle_2",audio="rifle",length=.9f,hold=Vector3.zero,aim=new Vector3(-.28f,-.03f,-.04f),mag=30,interval=.12f,damage=25,pellets=1,spread=0,range=80,kick=.045f,fov=40},
+   new WeaponSpec{key="weaponRifle",fbx="AssaultRifle_2",audio="rifle",length=.9f,hold=new Vector3(0,0,.17f),aim=new Vector3(-.28f,-.03f,-.04f),mag=30,interval=.12f,damage=25,pellets=1,spread=0,range=80,kick=.045f,fov=40},
    new WeaponSpec{key="weaponSmg",fbx="SubmachineGun_1",audio="smg",length=.55f,hold=Vector3.zero,aim=new Vector3(-.28f,-.02f,-.03f),mag=32,interval=.07f,damage=15,pellets=1,spread=0,range=60,kick=.03f,fov=45},
-   new WeaponSpec{key="weaponShotgun",fbx="Shotgun_4",audio="shotgun",length=1.05f,hold=Vector3.zero,aim=new Vector3(-.28f,-.02f,-.04f),mag=6,interval=.85f,damage=15,pellets=8,spread=4,range=40,kick=.12f,fov=50},
-   new WeaponSpec{key="weaponSniper",fbx="SniperRifle_4",audio="sniper",length=1.3f,hold=Vector3.zero,aim=new Vector3(-.28f,-.02f,-.04f),mag=5,interval=1.2f,damage=100,pellets=1,spread=0,range=120,kick=.15f,fov=20},
+   new WeaponSpec{key="weaponShotgun",fbx="Shotgun_4",audio="shotgun",manual=true,cycleRoll=6f,cyclePitch=5f,cyclePull=.05f,cycleSoundStart=.25f,cycleAudio="shotgun_pump.wav",length=1.05f,hold=new Vector3(0,0,.25f),aim=new Vector3(-.28f,-.02f,-.04f),mag=6,interval=.85f,damage=15,pellets=8,spread=4,range=40,kick=.12f,fov=50},
+   new WeaponSpec{key="weaponSniper",fbx="SniperRifle_4",audio="sniper",scope=true,manual=true,cycleRoll=30f,cyclePitch=-3f,cyclePull=.07f,cycleSoundStart=.12f,cycleAudio="sniper_bolt.wav",length=1.3f,hold=new Vector3(0,0,.40f),aim=new Vector3(-.28f,-.02f,-.04f),mag=5,interval=1.2f,damage=100,pellets=1,spread=0,range=120,kick=.15f,fov=20},
   };
   const string WeaponFolder="Assets/FieldOps/Weapons",WeaponModelFolder="Assets/FieldOps/ThirdParty/QuaterniusGuns/";
   const string WeaponAudioFolder="Assets/FieldOps/Audio/Weapons/";
@@ -75,8 +75,10 @@ namespace FieldOps.Editor {
     var fitted=RendererBounds(model);model.transform.localPosition=spec.hold-(fitted.center-holder.position);
     var final=RendererBounds(model);Debug.Log("FIELD_OPS_WEAPON "+spec.key+" rawSize="+raw.size+" yaw="+yaw+" length="+final.size.z);
     def.nameKey=spec.key;def.modelPrefab=prefab;def.modelLength=final.size.z;def.muzzleLocal=spec.hold+new Vector3(0,final.size.y*.18f,final.size.z*.5f+.03f);// Aiming centers the gun horizontally, puts its top edge a little under the eye line and keeps its rear end 38 cm from the camera.
-    def.aimOffset=new Vector3(-(holder.localPosition.x+spec.hold.x),-.075f-(holder.localPosition.y+spec.hold.y+final.size.y*.5f),.38f-(holder.localPosition.z+spec.hold.z-final.size.z*.5f));
-    def.magazineSize=spec.mag;def.fireInterval=spec.interval;def.damage=spec.damage;def.pellets=spec.pellets;def.spreadDegrees=spec.spread;def.range=spec.range;def.shotClip=ImportWeaponClip(spec.audio+"_shot.wav");def.reloadClip=ImportWeaponClip(spec.audio+"_reload.wav");def.reloadSeconds=def.reloadClip.length;def.kick=spec.kick;def.aimFov=spec.fov;
+    // Aiming puts the sight line (rear aperture or eyepiece through front post or objective) on the camera axis, with the rear sight at a comfortable distance from the eye.
+    var sights=WeaponSights.Build(spec.key,wrapper,holder,Mat,spec.hold.z);def.sightRear=sights.rear;def.sightFront=sights.front;
+    def.aimOffset=new Vector3(-(holder.localPosition.x+sights.rear.x),-(holder.localPosition.y+sights.rear.y),sights.eyeDistance-(holder.localPosition.z+sights.rear.z));
+    def.magazineSize=spec.mag;def.fireInterval=spec.interval;def.damage=spec.damage;def.pellets=spec.pellets;def.spreadDegrees=spec.spread;def.range=spec.range;def.shotClip=ImportWeaponClip(spec.audio+"_shot.wav");def.reloadClip=ImportWeaponClip(spec.audio+"_reload.wav");def.reloadSeconds=def.reloadClip.length;def.kick=spec.kick;def.aimFov=spec.fov;def.scopeView=spec.scope;def.manualAction=spec.manual;def.cycleRoll=spec.cycleRoll;def.cyclePitch=spec.cyclePitch;def.cyclePull=spec.cyclePull;def.cycleSoundStart=spec.cycleSoundStart;def.cycleClip=spec.manual?ImportWeaponClip(spec.cycleAudio):null;
     EditorUtility.SetDirty(def);definitions[i]=def;models[i]=wrapper;wrapper.gameObject.SetActive(i==GameSettings.DefaultWeapon);
    }
    AssetDatabase.SaveAssets();
@@ -114,10 +116,9 @@ namespace FieldOps.Editor {
    hud.slide=Panel("Slide touch button",safe,new Vector2(1,0),new Vector2(-565,120),new Vector2(180,85),new Color(.15f,.22f,.15f,.85f));hud.slideLabel=Label("Slide label",hud.slide,new Vector2(.5f,.5f),Vector2.zero,new Vector2(170,40),23);
    hud.lookLabel=Label("Look hint",safe,new Vector2(1,.5f),new Vector2(-245,0),new Vector2(400,40),20);hud.lookLabel.color=new Color(1,1,1,.55f);
    hud.languageButton=MenuButton("Language",safe,new Vector2(1,1),new Vector2(-130,-48),new Vector2(210,60));hud.resetButton=MenuButton("Reset",safe,new Vector2(1,1),new Vector2(-130,-123),new Vector2(210,60));hud.resetLabel=hud.resetButton.GetComponentInChildren<Text>();
-   hud.crosshair=CreateReticle(canvas.transform);
+   hud.crosshair=CreateReticle(canvas.transform);hud.scope=CreateScopeOverlay(canvas.transform);
    hud.help=Label("Editor help",safe,new Vector2(.5f,0),new Vector2(0,25),new Vector2(950,40),18);
    CreateRoundMenu(hud,safe);CreateSettingsMenu(hud,safe);CreateLayoutToolbar(hud,safe);
-   var dot=Panel("Aim dot",canvas.transform,new Vector2(.5f,.5f),Vector2.zero,new Vector2(8,8),new Color(1,.1f,.1f,1));dot.GetComponent<Image>().raycastTarget=false;hud.aimDot=dot.gameObject;dot.gameObject.SetActive(false);
    hud.languageButton.transform.SetAsLastSibling();hud.settingsButton.transform.SetAsLastSibling();
    new GameObject("EventSystem",typeof(EventSystem),typeof(InputSystemUIInputModule));return hud;
   }
@@ -174,6 +175,26 @@ namespace FieldOps.Editor {
    hud.replayButton=MenuButton("Replay round",results,new Vector2(.5f,.5f),new Vector2(0,-120),new Vector2(430,65));
    hud.configureButton=MenuButton("Configure round",results,new Vector2(.5f,.5f),new Vector2(0,-210),new Vector2(430,65));
    results.gameObject.SetActive(false);hud.resetButton.gameObject.SetActive(false);
+  }
+  // A square, soft-edged circular opening in solid black, generated here so the project owns it (no third-party image).
+  const string ScopeMaskPath="Assets/FieldOps/Textures/ScopeMask.png";
+  static Sprite EnsureScopeMask() {
+   Directory.CreateDirectory("Assets/FieldOps/Textures");const int n=512;var tex=new Texture2D(n,n,TextureFormat.RGBA32,false);var pixels=new Color32[n*n];
+   for(int y=0;y<n;y++)for(int x=0;x<n;x++) {float dx=(x+.5f)/n-.5f,dy=(y+.5f)/n-.5f;float r=Mathf.Sqrt(dx*dx+dy*dy);float a=Mathf.SmoothStep(0f,1f,(r-.41f)/.04f);pixels[y*n+x]=new Color32(0,0,0,(byte)Mathf.RoundToInt(a*255f));}
+   tex.SetPixels32(pixels);tex.Apply();File.WriteAllBytes(ScopeMaskPath,tex.EncodeToPNG());Object.DestroyImmediate(tex);
+   AssetDatabase.ImportAsset(ScopeMaskPath,ImportAssetOptions.ForceUpdate);
+   var importer=(TextureImporter)AssetImporter.GetAtPath(ScopeMaskPath);importer.textureType=TextureImporterType.Sprite;importer.spriteImportMode=SpriteImportMode.Single;importer.mipmapEnabled=false;importer.alphaIsTransparency=true;importer.wrapMode=TextureWrapMode.Clamp;importer.filterMode=FilterMode.Bilinear;importer.textureCompression=TextureImporterCompression.Uncompressed;importer.maxTextureSize=512;importer.SaveAndReimport();
+   return AssetDatabase.LoadAssetAtPath<Sprite>(ScopeMaskPath);
+  }
+  static ScopeOverlay CreateScopeOverlay(Transform canvas) {
+   var root=Rect("Scope overlay",canvas,new Vector2(.5f,.5f),Vector2.zero,Vector2.zero);root.anchorMin=Vector2.zero;root.anchorMax=Vector2.one;root.offsetMin=root.offsetMax=Vector2.zero;
+   var overlay=root.gameObject.AddComponent<ScopeOverlay>();var group=root.gameObject.AddComponent<CanvasGroup>();group.alpha=0;group.blocksRaycasts=false;group.interactable=false;overlay.group=group;
+   var black=new Color(0,0,0,1f);
+   overlay.circle=Panel("Scope circle",root,new Vector2(.5f,.5f),Vector2.zero,new Vector2(900,900),Color.white);overlay.circle.GetComponent<Image>().sprite=EnsureScopeMask();
+   overlay.left=Panel("Scope left",root,new Vector2(0,.5f),Vector2.zero,new Vector2(100,0),black);overlay.left.anchorMin=new Vector2(0,0);overlay.left.anchorMax=new Vector2(.5f,1);overlay.left.offsetMin=Vector2.zero;overlay.left.offsetMax=new Vector2(-400,0);
+   overlay.right=Panel("Scope right",root,new Vector2(1,.5f),Vector2.zero,new Vector2(100,0),black);overlay.right.anchorMin=new Vector2(.5f,0);overlay.right.anchorMax=new Vector2(1,1);overlay.right.offsetMin=new Vector2(400,0);overlay.right.offsetMax=Vector2.zero;
+   overlay.horizontal=Panel("Scope line horizontal",root,new Vector2(.5f,.5f),Vector2.zero,new Vector2(700,2),new Color(0,0,0,.85f));overlay.vertical=Panel("Scope line vertical",root,new Vector2(.5f,.5f),Vector2.zero,new Vector2(2,700),new Color(0,0,0,.85f));
+   root.SetAsFirstSibling();return overlay;
   }
   static GameObject CreateReticle(Transform canvas) {
    // Aim uses the camera viewport center, not the potentially asymmetric safe area.

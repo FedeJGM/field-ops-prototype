@@ -27,8 +27,8 @@ namespace FieldOps.Tests {
   }
   [Test] public void SavedSceneHasAimButtonAndSettingsMenuWithSerializedMaterials() {
    EditorSceneManager.OpenScene("Assets/FieldOps/Scenes/TrainingRange.unity",OpenSceneMode.Single);
-   var hud=Object.FindFirstObjectByType<PrototypeHud>();Assert.IsNotNull(hud.aim,"ADS touch button must be saved in the scene.");Assert.IsNotNull(hud.aimLabel);Assert.IsNotNull(hud.settingsButton);Assert.IsNotNull(hud.settingsPanel);Assert.IsNotNull(hud.aimModeButton);Assert.IsNotNull(hud.crossButton);Assert.IsNotNull(hud.closeSettingsButton);Assert.IsNotNull(hud.aimDot);
-   Assert.IsFalse(hud.settingsPanel.activeSelf,"Settings start closed.");Assert.IsFalse(hud.aimDot.GetComponent<Graphic>().raycastTarget,"The aiming dot must not intercept touches.");
+   var hud=Object.FindFirstObjectByType<PrototypeHud>();Assert.IsNotNull(hud.aim,"ADS touch button must be saved in the scene.");Assert.IsNotNull(hud.aimLabel);Assert.IsNotNull(hud.settingsButton);Assert.IsNotNull(hud.settingsPanel);Assert.IsNotNull(hud.aimModeButton);Assert.IsNotNull(hud.crossButton);Assert.IsNotNull(hud.closeSettingsButton);
+   Assert.IsFalse(hud.settingsPanel.activeSelf,"Settings start closed.");
    foreach(var graphic in hud.GetComponentsInChildren<Graphic>(true))Assert.IsNotNull(graphic.material,graphic.name+" must keep the serialized UiDefault material.");
   }
   [Test] public void SavedSceneWiresGameAudioToRifleAndTargetWithASingleListener() {

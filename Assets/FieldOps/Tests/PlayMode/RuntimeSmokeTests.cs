@@ -96,11 +96,11 @@ namespace FieldOps.Tests {
    session.SetPause(false);yield return new WaitForSeconds(2.0f);Assert.IsFalse(rifle.Ammo.IsReloading);Assert.AreEqual(30,rifle.Ammo.Count);
   }
   [UnityTest] public IEnumerator HoldAimZoomsLowersSensitivityShowsDotAndMovesWeapon() {
-   var rifle=hud.rifle;var cam=Camera.main;Assert.IsTrue(session.StartRound("60"));yield return null;yield return null;float restX=rifle.weapon.localPosition.x;Assert.AreEqual(68,cam.fieldOfView,.1f);Assert.IsTrue(hud.crosshair.activeSelf);Assert.IsFalse(hud.aimDot.activeSelf);
+   var rifle=hud.rifle;var cam=Camera.main;Assert.IsTrue(session.StartRound("60"));yield return null;yield return null;float restX=rifle.weapon.localPosition.x;Assert.AreEqual(68,cam.fieldOfView,.1f);Assert.IsTrue(hud.crosshair.activeSelf);
    var point=Point(hud.aim);Touch(12,UnityEngine.InputSystem.TouchPhase.Began,point);yield return new WaitForSeconds(.4f);
-   Assert.IsTrue(rifle.Aim.Aiming);Assert.AreEqual(40,cam.fieldOfView,.5f);Assert.AreEqual(.5f,input.LookScale,.02f);Assert.IsTrue(hud.aimDot.activeSelf);Assert.IsFalse(hud.crosshair.activeSelf,"Cross hides while aiming unless the option is on.");Assert.Less(rifle.weapon.localPosition.x,restX-.15f);yield return CapturePreview("ads-aim-preview.bmp");
+   Assert.IsTrue(rifle.Aim.Aiming);Assert.AreEqual(40,cam.fieldOfView,.5f);Assert.AreEqual(.5f,input.LookScale,.02f);Assert.IsFalse(hud.crosshair.activeSelf,"Cross hides while aiming unless the option is on.");Assert.Less(rifle.weapon.localPosition.x,restX-.15f);yield return CapturePreview("ads-aim-preview.bmp");
    Touch(12,UnityEngine.InputSystem.TouchPhase.Ended,point);yield return new WaitForSeconds(.4f);
-   Assert.IsFalse(rifle.Aim.Aiming);Assert.AreEqual(68,cam.fieldOfView,.5f);Assert.AreEqual(1,input.LookScale,.02f);Assert.IsFalse(hud.aimDot.activeSelf);Assert.IsTrue(hud.crosshair.activeSelf);Assert.AreEqual(restX,rifle.weapon.localPosition.x,.02f);
+   Assert.IsFalse(rifle.Aim.Aiming);Assert.AreEqual(68,cam.fieldOfView,.5f);Assert.AreEqual(1,input.LookScale,.02f);Assert.IsTrue(hud.crosshair.activeSelf);Assert.AreEqual(restX,rifle.weapon.localPosition.x,.02f);
   }
   [UnityTest] public IEnumerator ToggleModeFromSettingsKeepsAimingUntilPressedAgain() {
    var rifle=hud.rifle;hud.settingsButton.onClick.Invoke();yield return null;Assert.IsTrue(hud.settingsPanel.activeSelf);yield return CapturePreview("ads-settings-preview.bmp");hud.aimModeButton.onClick.Invoke();yield return null;
@@ -112,7 +112,7 @@ namespace FieldOps.Tests {
   [UnityTest] public IEnumerator KeepCrossOptionShowsBothReticlesWhileAiming() {
    var rifle=hud.rifle;hud.settingsButton.onClick.Invoke();yield return null;hud.crossButton.onClick.Invoke();yield return null;Assert.IsTrue(GameSettings.KeepCrossWhileAiming);hud.closeSettingsButton.onClick.Invoke();
    Assert.IsTrue(session.StartRound("60"));yield return null;var point=Point(hud.aim);Touch(15,UnityEngine.InputSystem.TouchPhase.Began,point);yield return new WaitForSeconds(.4f);
-   Assert.IsTrue(rifle.Aim.Aiming);Assert.IsTrue(hud.aimDot.activeSelf);Assert.IsTrue(hud.crosshair.activeSelf);Touch(15,UnityEngine.InputSystem.TouchPhase.Ended,point);yield return null;
+   Assert.IsTrue(rifle.Aim.Aiming);Assert.IsTrue(hud.crosshair.activeSelf);Touch(15,UnityEngine.InputSystem.TouchPhase.Ended,point);yield return null;
   }
   [UnityTest] public IEnumerator SettingsPauseTheRoundAndWorkInMenus() {
    hud.settingsButton.onClick.Invoke();yield return null;Assert.IsTrue(hud.settingsPanel.activeSelf);hud.closeSettingsButton.onClick.Invoke();yield return null;Assert.AreEqual(RoundPhase.Configuration,session.Round.Phase);Assert.IsFalse(hud.settingsPanel.activeSelf);
@@ -557,6 +557,74 @@ namespace FieldOps.Tests {
   [UnityTest] public IEnumerator StrafingAtTheEdgeMovesAtWalkSpeedNotSprintSpeed() {
    yield return OpenFieldRound();var start=motor.transform.position;Touch(124,UnityEngine.InputSystem.TouchPhase.Began,StickDir(90));yield return new WaitForSeconds(.8f);
    Assert.AreEqual(3.5f,motor.Model.Speed,.2f,"Walk speed sideways.");Assert.IsFalse(input.Sprint);Touch(124,UnityEngine.InputSystem.TouchPhase.Ended,StickDir(90));yield return null;
+  }
+  [UnityTest] public IEnumerator WhileAimingTheSightLineOfEveryWeaponSitsOnTheScreenCentre() {
+   motor.enabled=false;var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;var cam=Camera.main;
+   for(int i=0;i<rifle.weapons.Length;i++) {
+    rifle.Equip(i);yield return null;var aim=Point(hud.aim);Touch(130+i,UnityEngine.InputSystem.TouchPhase.Began,aim);yield return new WaitForSeconds(.5f);Assert.AreEqual(1f,rifle.Aim.Blend,.01f,rifle.Current.nameKey);
+    var rear=cam.WorldToViewportPoint(rifle.models[i].Find("Sight rear point").position);var front=cam.WorldToViewportPoint(rifle.models[i].Find("Sight front point").position);
+    Assert.AreEqual(.5f,rear.x,.02f,rifle.Current.nameKey+" rear x");Assert.AreEqual(.5f,rear.y,.02f,rifle.Current.nameKey+" rear y");Assert.AreEqual(.5f,front.x,.02f,rifle.Current.nameKey+" front x");Assert.AreEqual(.5f,front.y,.02f,rifle.Current.nameKey+" front y");Assert.Greater(rear.z,0f);Assert.Greater(front.z,rear.z);
+    yield return CapturePreview("sights-"+i+"-aim.bmp");Touch(130+i,UnityEngine.InputSystem.TouchPhase.Ended,aim);yield return new WaitForSeconds(.3f);yield return CapturePreview("sights-"+i+"-hip.bmp");
+   }
+  }
+  int SniperIndex() {var rifle=hud.rifle;return System.Array.FindIndex(rifle.weapons,w=>w.nameKey=="weaponSniper");}
+  [UnityTest] public IEnumerator AimingTheSniperClosesTheSidesHidesTheGunAndReleasingBringsItBack() {
+   motor.enabled=false;var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;int i=SniperIndex();rifle.Equip(i);yield return null;
+   Assert.AreEqual(0f,hud.scope.Alpha,.001f);Assert.IsTrue(rifle.models[i].gameObject.activeSelf);var aim=Point(hud.aim);Touch(140,UnityEngine.InputSystem.TouchPhase.Began,aim);yield return new WaitForSeconds(.6f);
+   Assert.Greater(hud.scope.Alpha,.95f,"The scope view is fully on.");Assert.Greater(rifle.ScopeBlend,.95f);Assert.IsFalse(rifle.models[i].gameObject.activeSelf,"The gun is hidden: the player looks through the scope.");Assert.IsFalse(hud.crosshair.activeSelf,"The scope has its own reticle.");
+   Assert.AreEqual(.3f,input.LookScale,.03f,"Slow, precise turning.");Assert.AreEqual(20f,Camera.main.fieldOfView,.5f);
+   var rect=((RectTransform)hud.scope.transform).rect;float side=hud.scope.circle.rect.width;Assert.AreEqual(rect.height,side,1f,"The circle square is as tall as the screen.");Assert.GreaterOrEqual(hud.scope.left.rect.width+side+hud.scope.right.rect.width,rect.width-1f,"The sides close in: nothing is left uncovered.");
+   Assert.AreEqual(hud.scope.holeFraction*side,hud.scope.horizontal.rect.width,2f,"The reticle spans the opening.");
+   yield return CapturePreview("scope-view.bmp");Touch(140,UnityEngine.InputSystem.TouchPhase.Ended,aim);yield return new WaitForSeconds(.4f);
+   Assert.AreEqual(0f,hud.scope.Alpha,.01f);Assert.IsTrue(rifle.models[i].gameObject.activeSelf,"The gun is back.");Assert.AreEqual(1f,input.LookScale,.02f);
+  }
+  [UnityTest] public IEnumerator OtherWeaponsNeverShowTheScopeView() {
+   motor.enabled=false;var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;
+   for(int i=0;i<rifle.weapons.Length;i++) {if(i==SniperIndex())continue;rifle.Equip(i);yield return null;var aim=Point(hud.aim);Touch(141+i,UnityEngine.InputSystem.TouchPhase.Began,aim);yield return new WaitForSeconds(.4f);Assert.AreEqual(0f,hud.scope.Alpha,.001f,rifle.Current.nameKey);Assert.IsTrue(rifle.models[i].gameObject.activeSelf,rifle.Current.nameKey);Touch(141+i,UnityEngine.InputSystem.TouchPhase.Ended,aim);yield return null;}
+  }
+  [UnityTest] public IEnumerator SprintingForwardLeavesTheScopeViewAndFiringWorksWhileScoped() {
+   motor.enabled=false;var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;int i=SniperIndex();rifle.Equip(i);yield return null;AimAtTarget();var aim=Point(hud.aim);Touch(150,UnityEngine.InputSystem.TouchPhase.Began,aim);yield return new WaitForSeconds(.5f);Assert.Greater(hud.scope.Alpha,.95f);
+   int before=rifle.Ammo.Count;var fire=Point(hud.fire);Touch(151,UnityEngine.InputSystem.TouchPhase.Began,fire);yield return new WaitForSeconds(.15f);Touch(151,UnityEngine.InputSystem.TouchPhase.Ended,fire);yield return null;Assert.Less(rifle.Ammo.Count,before,"The overlay does not block the fire button.");
+   Touch(152,UnityEngine.InputSystem.TouchPhase.Began,StickDir(0));yield return new WaitForSeconds(.5f);Assert.AreEqual(0f,hud.scope.Alpha,.05f);Assert.IsTrue(rifle.models[i].gameObject.activeSelf,"Sprinting leaves the scope and shows the gun.");
+   Touch(152,UnityEngine.InputSystem.TouchPhase.Ended,StickDir(0));Touch(150,UnityEngine.InputSystem.TouchPhase.Ended,aim);yield return null;
+  }
+  int WeaponIndex(string key) {return System.Array.FindIndex(hud.rifle.weapons,w=>w.nameKey==key);}
+  IEnumerator TapFire(int id,float seconds=.08f) {var fire=Point(hud.fire);Touch(id,UnityEngine.InputSystem.TouchPhase.Began,fire);yield return new WaitForSeconds(seconds);Touch(id,UnityEngine.InputSystem.TouchPhase.Ended,fire);yield return null;}
+  float WeaponTurn() {return Quaternion.Angle(hud.rifle.weapon.localRotation,Quaternion.identity);}
+  [UnityTest] public IEnumerator TheSniperWorksItsBoltDuringTheCooldownAndSoundsOnceThenReturnsToTheFiringPose() {
+   motor.enabled=false;var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;rifle.Equip(WeaponIndex("weaponSniper"));yield return null;AimAtTarget();
+   Assert.IsFalse(rifle.Cycle.Active);Assert.Less(WeaponTurn(),.5f);yield return TapFire(170);yield return new WaitForSeconds(.1f);Assert.IsTrue(rifle.Cycle.Active,"The cycle starts right after the shot.");
+   yield return new WaitForSeconds(.4f);Assert.Greater(WeaponTurn(),12f,"Mid-cycle the gun is turned for the bolt.");yield return CapturePreview("sniper-bolt.bmp");
+   yield return new WaitForSeconds(.9f);Assert.IsFalse(rifle.Cycle.Active);Assert.Less(WeaponTurn(),1f,"Back in the firing pose when the cooldown ends.");Assert.AreEqual(1,rifle.sfx.Count(Sfx.Cycle),"One bolt sound per shot.");Assert.AreSame(rifle.Current.cycleClip,rifle.sfx.LastClip(Sfx.Cycle));
+  }
+  [UnityTest] public IEnumerator AimingTheSniperLeavesTheScopeDuringTheBoltAndReturnsWhileAimIsStillHeld() {
+   motor.enabled=false;var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;rifle.Equip(WeaponIndex("weaponSniper"));yield return null;AimAtTarget();var aim=Point(hud.aim);Touch(171,UnityEngine.InputSystem.TouchPhase.Began,aim);yield return new WaitForSeconds(.5f);Assert.Greater(hud.scope.Alpha,.95f);
+   yield return TapFire(172);yield return new WaitForSeconds(.45f);Assert.IsTrue(rifle.Aim.Suppressed);Assert.Less(hud.scope.Alpha,.2f,"Out of the scope while the bolt is worked.");Assert.IsTrue(rifle.models[WeaponIndex("weaponSniper")].gameObject.activeSelf,"The gun is visible, so the player sees the cycle.");
+   yield return new WaitForSeconds(1.1f);Assert.IsFalse(rifle.Aim.Suppressed);Assert.Greater(hud.scope.Alpha,.9f,"Back in the scope with no new press, because AIM is still held.");
+   Touch(171,UnityEngine.InputSystem.TouchPhase.Ended,aim);yield return null;
+  }
+  [UnityTest] public IEnumerator ReleasingAimDuringTheBoltDoesNotBringTheScopeBack() {
+   motor.enabled=false;var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;rifle.Equip(WeaponIndex("weaponSniper"));yield return null;AimAtTarget();var aim=Point(hud.aim);Touch(173,UnityEngine.InputSystem.TouchPhase.Began,aim);yield return new WaitForSeconds(.5f);
+   yield return TapFire(174);yield return new WaitForSeconds(.3f);Touch(173,UnityEngine.InputSystem.TouchPhase.Ended,aim);yield return new WaitForSeconds(1.3f);Assert.AreEqual(0f,hud.scope.Alpha,.01f);Assert.IsFalse(rifle.Aim.Aiming);
+  }
+  [UnityTest] public IEnumerator TheShotgunPumpsAfterEachShotWithASmallerMotionThanTheBolt() {
+   motor.enabled=false;var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;rifle.Equip(WeaponIndex("weaponShotgun"));yield return null;AimAtTarget();
+   yield return TapFire(175);float peak=0;float end=Time.time+.9f;while(Time.time<end){peak=Mathf.Max(peak,WeaponTurn());yield return null;}
+   Assert.That(peak,Is.InRange(1.5f,16f),"A smaller turn than the sniper bolt.");Assert.IsFalse(rifle.Cycle.Active);Assert.Less(WeaponTurn(),1f);Assert.AreEqual(1,rifle.sfx.Count(Sfx.Cycle));
+  }
+  [UnityTest] public IEnumerator PistolRifleAndSubMachineGunHaveNoHandCycle() {
+   motor.enabled=false;var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;AimAtTarget();
+   foreach(var key in new[]{"weaponPistol","weaponRifle","weaponSmg"}) {rifle.Equip(WeaponIndex(key));yield return null;yield return TapFire(176);float peak=0;float end=Time.time+.5f;while(Time.time<end){peak=Mathf.Max(peak,WeaponTurn());Assert.IsFalse(rifle.Cycle.Active,key);yield return null;}Assert.Less(peak,.5f,key+" keeps its normal pose.");Assert.AreEqual(0,rifle.sfx.Count(Sfx.Cycle),key);}
+  }
+  [UnityTest] public IEnumerator SwappingWeaponOrReloadingEndsTheCycleAtOnce() {
+   motor.enabled=false;var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;rifle.Equip(WeaponIndex("weaponSniper"));yield return null;AimAtTarget();var aim=Point(hud.aim);Touch(177,UnityEngine.InputSystem.TouchPhase.Began,aim);yield return new WaitForSeconds(.4f);
+   yield return TapFire(178);yield return new WaitForSeconds(.3f);Assert.IsTrue(rifle.Cycle.Active);rifle.Equip(WeaponIndex("weaponRifle"));yield return null;yield return null;Assert.IsFalse(rifle.Cycle.Active);Assert.IsFalse(rifle.Aim.Suppressed,"The aim is no longer held back after a swap.");Assert.Less(WeaponTurn(),1f);
+   Touch(177,UnityEngine.InputSystem.TouchPhase.Ended,aim);yield return null;
+   rifle.Equip(WeaponIndex("weaponShotgun"));yield return null;yield return TapFire(179);yield return new WaitForSeconds(.2f);Assert.IsTrue(rifle.Cycle.Active);yield return Tap(180,hud.reload);yield return new WaitForSeconds(.1f);Assert.IsFalse(rifle.Cycle.Active,"Starting a reload ends the pump.");
+  }
+  [UnityTest] public IEnumerator PausingTheRoundStopsTheCycleAndItsSound() {
+   motor.enabled=false;var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;rifle.Equip(WeaponIndex("weaponSniper"));yield return null;AimAtTarget();yield return TapFire(181);yield return new WaitForSeconds(.2f);Assert.IsTrue(rifle.Cycle.Active);
+   int stops=rifle.sfx.StopCount;session.SetPause(true);yield return null;yield return null;Assert.IsFalse(rifle.Cycle.Active);Assert.Greater(rifle.sfx.StopCount,stops,"The bolt sound is cut.");session.SetPause(false);
   }
   [UnityTest] public IEnumerator ImpactMarksNeedNoRuntimePrimitiveSoTheBuildDoesNotStripTheColliderClass() {
    Assert.IsNotNull(target.markMesh,"The mark mesh is serialized in the scene.");

@@ -19,5 +19,11 @@ namespace FieldOps.Tests {
   [TearDown] public void CleanAfter() {PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");}
   [Test] public void DefaultsAreHoldModeAndNoCrossWhileAiming() { Assert.IsFalse(GameSettings.AimToggle);Assert.IsFalse(GameSettings.KeepCrossWhileAiming); }
   [Test] public void ChoicesPersistInPlayerPrefs() { GameSettings.AimToggle=true;GameSettings.KeepCrossWhileAiming=true;Assert.AreEqual(1,PlayerPrefs.GetInt("aimToggle",0));Assert.AreEqual(1,PlayerPrefs.GetInt("keepCross",0));Assert.IsTrue(GameSettings.AimToggle);Assert.IsTrue(GameSettings.KeepCrossWhileAiming);GameSettings.AimToggle=false;Assert.IsFalse(GameSettings.AimToggle);Assert.IsTrue(GameSettings.KeepCrossWhileAiming); }
+  [Test] public void SuppressingHidesTheAimButHoldModeComesBackByItself() { var a=new AimControl();for(int i=0;i<20;i++)a.Step(true,false,false,true,.02);Assert.IsTrue(a.Aiming);Assert.AreEqual(1f,a.Blend,.001f);
+   a.Suppressed=true;for(int i=0;i<20;i++)a.Step(true,false,false,true,.02);Assert.IsFalse(a.Aiming);Assert.AreEqual(0f,a.Blend,.001f,"The zoom lets go.");
+   a.Suppressed=false;a.Step(true,false,false,true,.02);Assert.IsTrue(a.Aiming,"Still holding: aiming resumes with no new press."); }
+  [Test] public void SuppressingKeepsToggleModeSwitchedOn() { var a=new AimControl{Toggle=true};a.Step(false,true,false,true,.02);Assert.IsTrue(a.Aiming);a.Suppressed=true;for(int i=0;i<10;i++)a.Step(false,false,false,true,.02);Assert.IsFalse(a.Aiming);a.Suppressed=false;a.Step(false,false,false,true,.02);Assert.IsTrue(a.Aiming,"Toggle was on, so it comes back without another tap."); }
+  [Test] public void SuppressionDoesNotRevealAnAimThatWasReleased() { var a=new AimControl();a.Step(true,false,false,true,.02);a.Suppressed=true;a.Step(false,false,false,true,.02);a.Suppressed=false;a.Step(false,false,false,true,.02);Assert.IsFalse(a.Aiming); }
+  [Test] public void SprintingStillCancelsTheWishToAimEvenWhenSuppressed() { var a=new AimControl{Toggle=true};a.Step(false,true,false,true,.02);a.Suppressed=true;a.Step(false,false,true,true,.02);a.Suppressed=false;a.Step(false,false,false,true,.02);Assert.IsFalse(a.Aiming); }
  }
 }

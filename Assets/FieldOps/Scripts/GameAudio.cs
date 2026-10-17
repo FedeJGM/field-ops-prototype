@@ -1,11 +1,11 @@
 using UnityEngine;
 namespace FieldOps {
- public enum Sfx { Shot, Reload, DryFire, Hit }
+ public enum Sfx { Shot, Reload, DryFire, Hit, Cycle }
  // Plays the equipped weapon's recorded shot and reload sounds plus two small generated sounds (empty click, target hit).
  // Counters and last-played clips work without an audio device, which is how batch-mode tests observe playback.
  public sealed class GameAudio : MonoBehaviour {
-  readonly int[] counts=new int[4];
-  readonly AudioClip[] last=new AudioClip[4];
+  readonly int[] counts=new int[5];
+  readonly AudioClip[] last=new AudioClip[5];
   AudioClip dryFire,hit;AudioSource effects,reload;WeaponDefinition weapon;
   public int StopCount { get; private set; }
   void Awake() {
@@ -22,6 +22,7 @@ namespace FieldOps {
    switch(sfx) {
     case Sfx.Shot:return weapon!=null?weapon.shotClip:null;
     case Sfx.Reload:return weapon!=null?weapon.reloadClip:null;
+    case Sfx.Cycle:return weapon!=null?weapon.cycleClip:null;
     case Sfx.DryFire:return dryFire;
     default:return hit;
    }

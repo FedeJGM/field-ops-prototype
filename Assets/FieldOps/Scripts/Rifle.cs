@@ -4,7 +4,8 @@ namespace FieldOps {
  public sealed class Rifle : MonoBehaviour {
   public TrainingSession session;public PrototypeInput input;public Camera view;public Transform weapon;public GameObject muzzleFlash;
   public WeaponDefinition[] weapons;public Transform[] models;
-  public GameAudio sfx;public SprintPose Sprint {get;}=new SprintPose();public Magazine Ammo {get;private set;}=new Magazine();public AimControl Aim {get;}=new AimControl();
+  public GameAudio sfx;public SprintPose Sprint {get;}=new SprintPose();public ActionCycle Cycle {get;}=new ActionCycle();// 0 = normal view, 1 = fully looking through the scope (only for weapons with a scope view).
+  public float ScopeBlend { get { return Current!=null&&Current.scopeView?Mathf.Clamp01(Mathf.InverseLerp(.3f,1f,Aim.Blend)):0f; } }public Magazine Ammo {get;private set;}=new Magazine();public AimControl Aim {get;}=new AimControl();
   public WeaponDefinition Current {get;private set;}public int CurrentIndex {get;private set;}=-1;
   ShotGate gate=new ShotGate(.12);Vector3 rest;float flashUntil,kick,baseFov;FirstPersonMotor motor;
   // Raised, turned-in carry while sprinting (muzzle up and toward the middle), blended by SprintPose.
@@ -13,12 +14,12 @@ namespace FieldOps {
   public void Equip(int index) {
    if(weapons==null||weapons.Length==0)return;
    index=Mathf.Clamp(index,0,weapons.Length-1);var def=weapons[index];
-   CurrentIndex=index;Current=def;if(sfx!=null)sfx.SetWeapon(def);Ammo=new Magazine(def.magazineSize,def.reloadSeconds);gate=new ShotGate(def.fireInterval);Aim.ZoomFov=def.aimFov;Aim.Reset();
+   Cycle.Cancel();Aim.Suppressed=false;CurrentIndex=index;Current=def;if(sfx!=null)sfx.SetWeapon(def);Ammo=new Magazine(def.magazineSize,def.reloadSeconds);gate=new ShotGate(def.fireInterval);Aim.ZoomFov=def.aimFov;Aim.Reset();
    for(int i=0;i<models.Length;i++)models[i].gameObject.SetActive(i==index);
    muzzleFlash.transform.localPosition=def.muzzleLocal;ClearVisuals();
   }
   public void ClearVisuals() {flashUntil=0;kick=0;if(sfx!=null)sfx.StopAll();if(muzzleFlash!=null)muzzleFlash.SetActive(false);}
-  public void ResetShots() {gate.Reset();Ammo.Reset();Aim.Reset();Sprint.Reset();ClearVisuals();}
+  public void ResetShots() {gate.Reset();Ammo.Reset();Aim.Reset();Sprint.Reset();Cycle.Cancel();Aim.Suppressed=false;ClearVisuals();}
   // One trigger pull: every pellet damages and marks the target, but only the first accepted hit scores a point.
   void Shoot() {
    var def=Current;var eye=view.transform;bool scored=false;
@@ -33,16 +34,23 @@ namespace FieldOps {
   }
   void LateUpdate() {
    session.Synchronize();
+   if(session.GameplayEnabled)Cycle.Step(Time.deltaTime);else Cycle.Cancel();
+   Aim.Suppressed=Cycle.Active&&Current!=null&&Current.scopeView;   // the scope is left while the bolt is worked; aiming resumes by itself if it is still wanted
+   if(Current!=null&&Current.manualAction&&Cycle.SoundDue(Current.cycleSoundStart)&&sfx!=null)sfx.Play(Sfx.Cycle);
    if(session.GameplayEnabled)Aim.Step(input.AimHeld,input.AimPressed,input.Sprint,true,Time.deltaTime);else Aim.Reset();
-   view.fieldOfView=Aim.Fov(baseFov);input.LookScale=Aim.LookScale;
+   view.fieldOfView=Aim.Fov(baseFov);input.LookScale=Aim.LookScale*Mathf.Lerp(1f,.6f,ScopeBlend);   // the scope turns more slowly than other aiming
+   if(Current!=null&&models!=null&&CurrentIndex>=0){var model=models[CurrentIndex].gameObject;bool show=ScopeBlend<.6f;if(model.activeSelf!=show)model.SetActive(show);}   // looking through the scope, the gun itself is out of sight
    bool sliding=motor!=null&&motor.Model!=null&&motor.Model.State==MoveState.Sliding;
    if(session.GameplayEnabled)Sprint.Step(Sprint.Wants(input.Sprint,input.Move.sqrMagnitude>.04f,Aim.Aiming,sliding),input.Fire,Time.deltaTime);else Sprint.Reset();
-   if(session.GameplayEnabled) {Ammo.Tick(Time.deltaTime);if(input.Reload&&Ammo.BeginReload()&&sfx!=null)sfx.Play(Sfx.Reload);}
+   if(session.GameplayEnabled) {Ammo.Tick(Time.deltaTime);if(input.Reload&&Ammo.BeginReload()){Cycle.Cancel();if(sfx!=null)sfx.Play(Sfx.Reload);}}
    if(session.GameplayEnabled&&input.Fire&&Ammo.IsEmpty&&!Ammo.IsReloading&&gate.TryFire(Time.timeAsDouble)&&sfx!=null)sfx.Play(Sfx.DryFire);
-   if(session.GameplayEnabled&&input.Fire&&!Ammo.IsReloading&&!Ammo.IsEmpty&&gate.TryFire(Time.timeAsDouble)) {Ammo.TryConsume();if(sfx!=null)sfx.Play(Sfx.Shot);kick=Current.kick;flashUntil=Time.time+.04f;Shoot();}
+   if(session.GameplayEnabled&&input.Fire&&!Ammo.IsReloading&&!Ammo.IsEmpty&&gate.TryFire(Time.timeAsDouble)) {Ammo.TryConsume();if(sfx!=null)sfx.Play(Sfx.Shot);kick=Current.kick;flashUntil=Time.time+.04f;Shoot();if(Current.manualAction)Cycle.Start(Current.fireInterval);}
    kick=Mathf.MoveTowards(kick,0,Time.deltaTime*.25f);float calm=1f-.7f*Aim.Blend;float carry=Mathf.SmoothStep(0,1,Sprint.Blend);float bobSpeed=Mathf.Lerp(7f,9.5f,carry);
    weapon.localPosition=rest+Vector3.Lerp(Vector3.zero,Current.aimOffset,Aim.Blend)+Vector3.Lerp(Vector3.zero,SprintOffset,carry)+new Vector3(Mathf.Sin(Time.time*bobSpeed)*input.Move.magnitude*Mathf.Lerp(.006f,.02f,carry),Mathf.Abs(Mathf.Cos(Time.time*bobSpeed))*input.Move.magnitude*Mathf.Lerp(.008f,.025f,carry),-kick)*calm;
-   weapon.localRotation=Quaternion.Slerp(Quaternion.identity,SprintRotation,carry);muzzleFlash.SetActive(Time.time<flashUntil);
+   // Working the bolt or pump: the weapon turns out, is pulled back and returns, using the whole cooldown.
+   float roll=Cycle.Roll,pull=Cycle.Pull,damp=1f-.6f*Aim.Blend;
+   weapon.localPosition+=new Vector3(-.015f*roll,.01f*roll,-Current.cyclePull*pull)*damp;
+   weapon.localRotation=Quaternion.Slerp(Quaternion.identity,SprintRotation,carry)*Quaternion.Euler(Current.cyclePitch*roll*damp,0f,Current.cycleRoll*roll*damp);muzzleFlash.SetActive(Time.time<flashUntil&&ScopeBlend<.6f);
   }
  }
 }

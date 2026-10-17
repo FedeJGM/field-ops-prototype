@@ -9,6 +9,13 @@ namespace FieldOps {
   public float modelLength;
   public Vector3 muzzleLocal;
   public Vector3 aimOffset=new Vector3(-.28f,-.03f,-.04f);
+  // Hip-pose, holder-local points of the sight line: rear aperture (or scope eyepiece) and front post tip (or scope objective).
+  public Vector3 sightRear,sightFront;
+  public bool scopeView;   // aiming shows the scope view (dark surround, circular opening) instead of the gun
+  // Hand-worked action after each shot (sniper bolt, shotgun pump): the weapon moves during the fire cooldown.
+  public bool manualAction;
+  public float cycleRoll,cyclePitch,cyclePull,cycleSoundStart;
+  public AudioClip cycleClip;
   public int magazineSize=30;
   public float fireInterval=.12f;
   public int damage=25;

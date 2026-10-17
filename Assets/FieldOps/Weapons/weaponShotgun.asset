@@ -17,8 +17,17 @@ MonoBehaviour:
   shotClip: {fileID: 8300000, guid: 45583ae7240de014693c285cb010db2e, type: 3}
   reloadClip: {fileID: 8300000, guid: 59ea70e250363b147ab892ccf676603a, type: 3}
   modelLength: 1.05
-  muzzleLocal: {x: 0, y: 0.032145835, z: 0.55499995}
-  aimOffset: {x: -0.28, y: 0.075706005, z: 0.44499996}
+  muzzleLocal: {x: 0, y: 0.032145835, z: 0.80499995}
+  aimOffset: {x: -0.28, y: 0.14929108, z: -0.19}
+  sightRear: {x: 0, y: 0.09070891, z: 0.09}
+  sightFront: {x: 0, y: 0.09070891, z: 0.75}
+  scopeView: 0
+  manualAction: 1
+  cycleRoll: 6
+  cyclePitch: 5
+  cyclePull: 0.05
+  cycleSoundStart: 0.25
+  cycleClip: {fileID: 8300000, guid: a6fb7aa994fc1ec45bc011b02603f8c3, type: 3}
   magazineSize: 6
   fireInterval: 0.85
   damage: 15

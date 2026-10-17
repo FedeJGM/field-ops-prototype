@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 namespace FieldOps {
  public sealed class PrototypeHud : MonoBehaviour {
-  public RectTransform safeRoot, joystick, stick, fire, sprint, reload, aim, jump, slide;public CanvasGroup headerGroup;public Text settingsSubtitle;public Button sprintSensButton;public Text sprintSensLabel;public Button sprintModeButton;public Text sprintModeLabel;public bool SprintByJoystick { get; private set; }public SprintSensitivity SprintLevel { get; private set; }
+  public RectTransform safeRoot, joystick, stick, fire, sprint, reload, aim, jump, slide;public ScopeOverlay scope;public CanvasGroup headerGroup;public Text settingsSubtitle;public Button sprintSensButton;public Text sprintSensLabel;public Button sprintModeButton;public Text sprintModeLabel;public bool SprintByJoystick { get; private set; }public SprintSensitivity SprintLevel { get; private set; }
   public Button languageButton, resetButton, startButton, replayButton, configureButton;
   public Text jumpLabel, slideLabel, title, status, moveLabel, lookLabel, fireLabel, sprintLabel, resetLabel, hitLabel, help;
   public Text roundTitle,durationLabel,durationError,scoreRule,timerLabel,resultTitle,resultScore;
@@ -12,7 +12,7 @@ namespace FieldOps {
   public InputField durationInput;
   public Text reloadLabel,ammoLabel,aimLabel,settingsTitle,aimModeLabel,crossLabel;
   public Button settingsButton,aimModeButton,crossButton,closeSettingsButton;
-  public GameObject settingsPanel,aimDot;
+  public GameObject settingsPanel;
   public Button editLayoutButton,saveLayoutButton,resetLayoutButton,cancelLayoutButton;
   public GameObject layoutPanel;public Text layoutHint;
   public Text weaponNameLabel,weaponStatsLabel;public Button weaponPrevButton,weaponNextButton;
@@ -149,7 +149,7 @@ namespace FieldOps {
    bool active=session.Round.Phase==RoundPhase.Active;bool editing=EditingLayout,show=active||editing;
    // The header also doubles as the paused notice, so it stays visible while the round is suspended.
    headerGroup.alpha=active&&session.Round.Suspended?1f:TitleTab.Alpha(session.Round.DurationSeconds-session.Round.RemainingSeconds,active);
-   bool aiming=active&&rifle.Aim.Aiming;crosshair.SetActive(active&&(!aiming||GameSettings.KeepCrossWhileAiming));aimDot.SetActive(aiming);aim.gameObject.SetActive(show);menuBlocker.SetActive(!active&&!editing);configurationPanel.SetActive(session.Round.Phase==RoundPhase.Configuration&&!editing);resultsPanel.SetActive(session.Round.Phase==RoundPhase.Results&&!editing);
+   bool aiming=active&&rifle.Aim.Aiming;crosshair.SetActive(active&&(!aiming||GameSettings.KeepCrossWhileAiming)&&rifle.ScopeBlend<.5f);scope.SetBlend(active?rifle.ScopeBlend:0f);aim.gameObject.SetActive(show);menuBlocker.SetActive(!active&&!editing);configurationPanel.SetActive(session.Round.Phase==RoundPhase.Configuration&&!editing);resultsPanel.SetActive(session.Round.Phase==RoundPhase.Results&&!editing);
    joystick.gameObject.SetActive(show);moveLabel.gameObject.SetActive(show);fire.gameObject.SetActive(show);sprint.gameObject.SetActive(show&&!SprintByJoystick);jump.gameObject.SetActive(show);slide.gameObject.SetActive(show);lookLabel.gameObject.SetActive(active);help.gameObject.SetActive(active&&!Application.isMobilePlatform);hitLabel.gameObject.SetActive(active);timerLabel.gameObject.SetActive(active);reload.gameObject.SetActive(show);ammoLabel.gameObject.SetActive(show);
    ammoLabel.text=rifle.Ammo.IsReloading?GameText.Get("reloading",spanish):GameText.Get("ammo",spanish)+" "+rifle.Ammo.Count+" / ∞";reload.GetComponent<Image>().color=rifle.Ammo.IsReloading?new Color(.5f,.5f,.5f,.6f):(rifle.Ammo.IsEmpty?new Color(.85f,.25f,.2f,.9f):new Color(.12f,.2f,.28f,.85f));
    status.text=GameText.Get(session.Round.Suspended&&active?"paused":"status",spanish);
