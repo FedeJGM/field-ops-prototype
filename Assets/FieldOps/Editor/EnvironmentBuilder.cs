@@ -86,8 +86,8 @@ namespace FieldOps.Editor {
    // backstop with sandbag flanks, and the four field walls
    Prop("Backstop",PrimitiveType.Cube,new Vector3(0,1.5f,12),new Vector3(20,3,.7f),backstopMat,world);
    Prop("Sandbag wall backstop left",PrimitiveType.Cube,new Vector3(-7,.45f,10.7f),new Vector3(5,.9f,.8f),sandbag,world);Prop("Sandbag wall backstop right",PrimitiveType.Cube,new Vector3(7,.45f,10.7f),new Vector3(5,.9f,.8f),sandbag,world);
-   Prop("Boundary west",PrimitiveType.Cube,new Vector3(-22,1,0),new Vector3(.5f,2,56),wallEW,world);Prop("Boundary east",PrimitiveType.Cube,new Vector3(22,1,0),new Vector3(.5f,2,56),wallEW,world);
-   Prop("Boundary south",PrimitiveType.Cube,new Vector3(0,1,-28),new Vector3(44,2,.5f),wallNS,world);Prop("Boundary north",PrimitiveType.Cube,new Vector3(0,1,28),new Vector3(44,2,.5f),wallNS,world);
+   Prop("Boundary west",PrimitiveType.Cube,new Vector3(-22,2,0),new Vector3(.5f,4,56),wallEW,world);Prop("Boundary east",PrimitiveType.Cube,new Vector3(22,2,0),new Vector3(.5f,4,56),wallEW,world);
+   Prop("Boundary south",PrimitiveType.Cube,new Vector3(0,2,-28),new Vector3(44,4,.5f),wallNS,world);Prop("Boundary north",PrimitiveType.Cube,new Vector3(0,2,28),new Vector3(44,4,.5f),wallNS,world);
 
    // sandbag positions around the firing line and the target
    Prop("Sandbag wall firing left",PrimitiveType.Cube,new Vector3(-5.5f,.45f,-9.5f),new Vector3(4,.9f,.8f),sandbag,world);Prop("Sandbag wall firing right",PrimitiveType.Cube,new Vector3(5.5f,.45f,-9.5f),new Vector3(4,.9f,.8f),sandbag,world);

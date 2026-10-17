@@ -6,7 +6,7 @@ namespace FieldOps {
  public sealed class HudLayout {
   public const int Version=1;
   public const float MaxOffset=10000f;
-  public static readonly string[] Ids={"joystick","fire","reload","aim","sprint"};
+  public static readonly string[] Ids={"joystick","fire","reload","aim","sprint","jump","slide","language","fps"};
   [Serializable] public sealed class Saved { public int version; public Entry[] entries; }
   [Serializable] public struct Entry { public string id; public float x; public float y; }
   readonly Dictionary<string,Vector2> positions=new Dictionary<string,Vector2>();

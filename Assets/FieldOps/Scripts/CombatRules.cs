@@ -53,6 +53,11 @@ namespace FieldOps {
     case "paused": return spanish?"PARTIDA EN PAUSA":"ROUND PAUSED";
     case "fire": return spanish?"DISPARAR":"FIRE";
     case "sprint": return spanish?"ESPRINTAR":"SPRINT";
+    case "jump": return spanish?"SALTAR":"JUMP";
+    case "sprintMode": return spanish?"MODO DE CARRERA":"SPRINT MODE";
+    case "stick": return "JOYSTICK";
+    case "button": return spanish?"BOTÓN":"BUTTON";
+    case "slide": return spanish?"DESLIZAR":"SLIDE";
     case "move": return spanish?"MOVER":"MOVE";
     case "look": return spanish?"DESLIZA PARA MIRAR":"SWIPE TO LOOK";
     case "hits": return spanish?"IMPACTOS":"HITS";

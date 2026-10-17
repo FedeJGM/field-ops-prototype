@@ -11,7 +11,7 @@ namespace FieldOps.Tests {
  public class RuntimeSmokeTests {
   TrainingSession session; PrototypeInput input; FirstPersonMotor motor; TrainingTarget target; PrototypeHud hud; Touchscreen screen;
   [UnitySetUp] public IEnumerator LoadScene() {
-   PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");PlayerPrefs.DeleteKey("weapon");PlayerPrefs.DeleteKey("showFps");
+   PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");PlayerPrefs.DeleteKey("weapon");PlayerPrefs.DeleteKey("showFps");PlayerPrefs.DeleteKey("sprintMode");
    yield return SceneManager.LoadSceneAsync("TrainingRange");
    yield return null; yield return null;
    input=Object.FindFirstObjectByType<PrototypeInput>();motor=Object.FindFirstObjectByType<FirstPersonMotor>();target=Object.FindFirstObjectByType<TrainingTarget>();hud=Object.FindFirstObjectByType<PrototypeHud>();
@@ -22,7 +22,7 @@ namespace FieldOps.Tests {
    session=Object.FindFirstObjectByType<TrainingSession>();session.SetPause(false);session.SetFocus(true);
    screen=InputSystem.AddDevice<Touchscreen>();InputSystem.EnableDevice(screen);Canvas.ForceUpdateCanvases();
   }
-  [UnityTearDown] public IEnumerator Cleanup() {InputSystem.RemoveDevice(screen);PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");PlayerPrefs.DeleteKey("weapon");PlayerPrefs.DeleteKey("showFps");yield return null;}
+  [UnityTearDown] public IEnumerator Cleanup() {InputSystem.RemoveDevice(screen);PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");PlayerPrefs.DeleteKey("weapon");PlayerPrefs.DeleteKey("showFps");PlayerPrefs.DeleteKey("sprintMode");yield return null;}
   Vector2 Point(RectTransform rect) {return RectTransformUtility.WorldToScreenPoint(null,rect.position);}
   void Touch(int id,UnityEngine.InputSystem.TouchPhase phase,Vector2 point) {InputSystem.QueueStateEvent(screen,new TouchState {touchId=id,phase=phase,position=point});}
   [UnityTest] public IEnumerator SceneRendersWithConfiguredRuntimeObjects() {
@@ -35,6 +35,7 @@ namespace FieldOps.Tests {
   }
   [UnityTest] public IEnumerator IndependentTouchesMoveSprintAndLookWithoutRoleSwitching() {
    Assert.IsTrue(session.StartRound("60"));yield return null;
+   hud.sprintModeButton.onClick.Invoke();Canvas.ForceUpdateCanvases();   // this test drives the sprint button
    Vector2 move=Point(hud.joystick)+Vector2.up*(55*hud.GetComponent<Canvas>().scaleFactor);Vector2 sprint=Point(hud.sprint);Vector2 look=new Vector2(Screen.width*.65f,Screen.height*.6f);
    Touch(1,UnityEngine.InputSystem.TouchPhase.Began,move);Touch(2,UnityEngine.InputSystem.TouchPhase.Began,sprint);Touch(3,UnityEngine.InputSystem.TouchPhase.Began,look);yield return null;yield return null;
    Debug.Log("SMOKE_INPUT touches="+UnityEngine.InputSystem.EnhancedTouch.Touch.activeTouches.Count+" device="+screen.enabled+" move="+input.Move+" screen="+Screen.width+"x"+Screen.height+" point="+move+" contains="+hud.Contains(hud.joystick,move));Assert.Greater(input.Move.y,.1f);Assert.IsTrue(input.Sprint);Vector3 start=motor.transform.position;Quaternion rotation=motor.transform.rotation;
@@ -120,7 +121,7 @@ namespace FieldOps.Tests {
    hud.closeSettingsButton.onClick.Invoke();yield return new WaitForSeconds(.2f);Assert.IsFalse(session.SettingsOpen);Assert.IsFalse(session.Round.Suspended);Assert.Less(session.Round.RemainingSeconds,remaining);
   }
   [UnityTest] public IEnumerator SprintCancelsAimingButReloadingKeepsIt() {
-   var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;rifle.Ammo.TryConsume();var aim=Point(hud.aim);var sprint=Point(hud.sprint);
+   hud.sprintModeButton.onClick.Invoke();var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;rifle.Ammo.TryConsume();var aim=Point(hud.aim);var sprint=Point(hud.sprint);
    Touch(16,UnityEngine.InputSystem.TouchPhase.Began,aim);yield return new WaitForSeconds(.3f);Assert.IsTrue(rifle.Aim.Aiming);
    yield return Tap(17,hud.reload);Assert.IsTrue(rifle.Ammo.IsReloading);Assert.IsTrue(rifle.Aim.Aiming,"Reloading must not cancel aiming.");
    Touch(18,UnityEngine.InputSystem.TouchPhase.Began,sprint);yield return new WaitForSeconds(.3f);Assert.IsFalse(rifle.Aim.Aiming,"Sprinting cancels aiming.");
@@ -172,7 +173,7 @@ namespace FieldOps.Tests {
    Assert.AreEqual(saved.x,reloaded.reload.anchoredPosition.x,.5f);Assert.AreEqual(saved.y,reloaded.reload.anchoredPosition.y,.5f);Assert.AreEqual(new Vector2(-160,170),reloaded.fire.anchoredPosition,"Untouched buttons keep their default place.");
   }
   [UnityTest] public IEnumerator CancelDiscardsEditsAndStoresNothing() {
-   var defaultPosition=hud.sprint.anchoredPosition;yield return OpenLayoutEditor();var from=Point(hud.sprint);yield return Drag(34,from,from+new Vector2(-400,300)*CanvasScale());Assert.AreNotEqual(defaultPosition,hud.sprint.anchoredPosition);
+   hud.sprintModeButton.onClick.Invoke();var defaultPosition=hud.sprint.anchoredPosition;yield return OpenLayoutEditor();var from=Point(hud.sprint);yield return Drag(34,from,from+new Vector2(-400,300)*CanvasScale());Assert.AreNotEqual(defaultPosition,hud.sprint.anchoredPosition);
    hud.cancelLayoutButton.onClick.Invoke();yield return null;Assert.IsFalse(hud.EditingLayout);Assert.AreEqual(defaultPosition.x,hud.sprint.anchoredPosition.x,.01f);Assert.AreEqual(defaultPosition.y,hud.sprint.anchoredPosition.y,.01f);Assert.IsFalse(PlayerPrefs.HasKey("hudLayout"));
   }
   [UnityTest] public IEnumerator ResetThenSaveRestoresDefaultsAndClearsTheStoredLayout() {
@@ -360,6 +361,148 @@ namespace FieldOps.Tests {
     Assert.IsTrue(hitSomething,"pitch "+pitch+": the ray reaches the ground");Assert.AreNotEqual("Player",hit.collider.name,"pitch "+pitch+": the ray starts inside the player capsule and must not hit it");
    }
    Assert.AreEqual(2,player.layer,"The player is on the Ignore Raycast layer so its own capsule never blocks shots.");
+  }
+  [UnityTest] public IEnumerator JumpAndSlideButtonsExistAreLabelledAndMovable() {
+   Assert.IsNotNull(hud.jump);Assert.IsNotNull(hud.slide);Assert.AreEqual("JUMP",hud.jumpLabel.text);Assert.AreEqual("SLIDE",hud.slideLabel.text);
+   Assert.AreEqual("Jump touch button",hud.jump.name);Assert.AreEqual("Slide touch button",hud.slide.name);
+   Assert.AreSame(hud.jump.GetComponent<UnityEngine.UI.Image>().material,hud.sprint.GetComponent<UnityEngine.UI.Image>().material,"New buttons use the serialized UI material.");
+   hud.languageButton.onClick.Invoke();yield return null;Assert.AreEqual("SALTAR",hud.jumpLabel.text);Assert.AreEqual("DESLIZAR",hud.slideLabel.text);hud.languageButton.onClick.Invoke();
+   Assert.IsTrue(session.StartRound("60"));yield return null;Assert.IsTrue(hud.jump.gameObject.activeInHierarchy);Assert.IsTrue(hud.slide.gameObject.activeInHierarchy);
+  }
+  [UnityTest] public IEnumerator JumpButtonSetsPressedOnceAndHeldWhileTheFingerStays() {
+   motor.enabled=false;Assert.IsTrue(session.StartRound("60"));yield return null;var jump=Point(hud.jump);
+   Touch(60,UnityEngine.InputSystem.TouchPhase.Began,jump);yield return null;Assert.IsTrue(input.JumpPressed);Assert.IsTrue(input.JumpHeld);
+   yield return null;yield return null;Assert.IsFalse(input.JumpPressed,"Pressed lasts a single frame.");Assert.IsTrue(input.JumpHeld);
+   Touch(60,UnityEngine.InputSystem.TouchPhase.Ended,jump);yield return null;yield return null;Assert.IsFalse(input.JumpHeld);
+  }
+  [UnityTest] public IEnumerator SlideButtonSetsPressedForASingleFrame() {
+   motor.enabled=false;Assert.IsTrue(session.StartRound("60"));yield return null;var slide=Point(hud.slide);
+   Touch(61,UnityEngine.InputSystem.TouchPhase.Began,slide);yield return null;Assert.IsTrue(input.SlidePressed);yield return null;yield return null;Assert.IsFalse(input.SlidePressed);Assert.IsFalse(input.Fire,"The slide button is not a fire or look touch.");
+   Touch(61,UnityEngine.InputSystem.TouchPhase.Ended,slide);yield return null;
+  }
+  [UnityTest] public IEnumerator PausedOrMenuStatesClearJumpAndSlide() {
+   motor.enabled=false;Assert.IsTrue(session.StartRound("60"));yield return null;var jump=Point(hud.jump);Touch(62,UnityEngine.InputSystem.TouchPhase.Began,jump);yield return null;Assert.IsTrue(input.JumpHeld);
+   session.SetSettingsOpen(true);yield return null;yield return null;Assert.IsFalse(input.JumpHeld);Assert.IsFalse(input.JumpPressed);Assert.IsFalse(input.SlidePressed);
+   session.SetSettingsOpen(false);Touch(62,UnityEngine.InputSystem.TouchPhase.Ended,jump);yield return null;
+  }
+  Vector2 StickForward() {return Point(hud.joystick)+Vector2.up*(90*hud.GetComponent<Canvas>().scaleFactor);}   // full tilt
+  void PlacePlayer(Vector3 position) {var controller=motor.GetComponent<CharacterController>();controller.enabled=false;motor.transform.position=position;motor.transform.rotation=Quaternion.identity;controller.enabled=true;}
+  IEnumerator StartRunning() {Touch(70,UnityEngine.InputSystem.TouchPhase.Began,StickForward());yield return null;}   // the full-tilt stick sprints by itself
+  void StopRunning() {Touch(70,UnityEngine.InputSystem.TouchPhase.Ended,StickForward());}
+  IEnumerator TapButton(int id,RectTransform button) {var p=Point(button);Touch(id,UnityEngine.InputSystem.TouchPhase.Began,p);yield return null;Touch(id,UnityEngine.InputSystem.TouchPhase.Ended,p);yield return null;}
+  IEnumerator OpenFieldRound(float z=-18f) {Assert.IsTrue(session.StartRound("120"));yield return null;PlacePlayer(new Vector3(0,.06f,z));yield return new WaitForSeconds(.4f);}
+  [UnityTest] public IEnumerator JumpLiftsThePlayerAboutOneMeterAndItLandsAgain() {
+   yield return OpenFieldRound();float start=motor.transform.position.y;float max=start;yield return TapButton(72,hud.jump);
+   float end=Time.time+1.6f;while(Time.time<end) {max=Mathf.Max(max,motor.transform.position.y);yield return null;}
+   Assert.AreEqual(1f,max-start,.2f,"The jump apex is about one meter.");Assert.AreEqual(start,motor.transform.position.y,.1f,"Back on the ground.");Assert.AreEqual(MoveState.Grounded,motor.Model.State);
+  }
+  [UnityTest] public IEnumerator HoldingJumpWhileSprintingChainsHopsAndBuildsSpeedWithoutLeavingTheField() {
+   yield return OpenFieldRound();yield return StartRunning();yield return new WaitForSeconds(.5f);
+   var jump=Point(hud.jump);Touch(73,UnityEngine.InputSystem.TouchPhase.Began,jump);float topSpeed=0;int hops=0;float end=Time.time+2.1f;while(Time.time<end) {topSpeed=Mathf.Max(topSpeed,motor.Model.Speed);hops=Mathf.Max(hops,motor.Model.HopCount);yield return null;}
+   Touch(73,UnityEngine.InputSystem.TouchPhase.Ended,jump);StopRunning();yield return null;
+   Assert.GreaterOrEqual(hops,1,"Landing and jumping again inside the window chains a hop.");Assert.Greater(topSpeed,6.2f,"The chain gains speed over the sprint.");Assert.LessOrEqual(topSpeed,7.51f);Assert.Greater(motor.transform.position.z,-18f);
+  }
+  [UnityTest] public IEnumerator SlideLowersTheViewAndTheBodyThenStandsUpAgain() {
+   yield return OpenFieldRound();yield return StartRunning();yield return new WaitForSeconds(.6f);var camera=Camera.main.transform;var controller=motor.GetComponent<CharacterController>();
+   yield return TapButton(74,hud.slide);yield return new WaitForSeconds(.3f);
+   Assert.AreEqual(MoveState.Sliding,motor.Model.State);Assert.Less(controller.height,1.3f,"The body shrinks.");Assert.Less(camera.localPosition.y,1.2f,"The view drops.");Assert.Greater(motor.Model.Speed,2.5f);
+   yield return new WaitForSeconds(1.5f);StopRunning();yield return new WaitForSeconds(.4f);
+   Assert.AreEqual(MoveState.Grounded,motor.Model.State);Assert.AreEqual(1.8f,controller.height,.02f);Assert.AreEqual(.9f,controller.center.y,.02f);Assert.AreEqual(1.65f,camera.localPosition.y,.02f);
+  }
+  [UnityTest] public IEnumerator WalkingIsTooSlowToSlide() {
+   yield return OpenFieldRound();Touch(70,UnityEngine.InputSystem.TouchPhase.Began,StickTilt(45));yield return new WaitForSeconds(.6f);Assert.Less(motor.Model.Speed,5f,"A partial push walks.");yield return TapButton(75,hud.slide);yield return new WaitForSeconds(.2f);
+   Assert.AreNotEqual(MoveState.Sliding,motor.Model.State);Touch(70,UnityEngine.InputSystem.TouchPhase.Ended,StickTilt(45));yield return null;
+  }
+  [UnityTest] public IEnumerator JumpingDuringASlideCancelsItAndTheBodyStandsBackUp() {
+   yield return OpenFieldRound();yield return StartRunning();yield return new WaitForSeconds(.6f);yield return TapButton(76,hud.slide);yield return new WaitForSeconds(.2f);Assert.AreEqual(MoveState.Sliding,motor.Model.State);float slideSpeed=motor.Model.Speed;
+   yield return TapButton(77,hud.jump);yield return new WaitForSeconds(.25f);StopRunning();
+   Assert.AreEqual(MoveState.Airborne,motor.Model.State);Assert.AreEqual(1,motor.Model.HopCount);Assert.Greater(motor.Model.Speed,slideSpeed-.8f,"The slide speed carries into the jump.");Assert.Greater(motor.Height,1.6f,"The body is standing again.");
+  }
+  [UnityTest] public IEnumerator UnderALowCeilingTheSlideStaysCrouchedUntilThereIsRoomToStand() {
+   var ceiling=GameObject.CreatePrimitive(PrimitiveType.Cube);ceiling.name="Test ceiling";ceiling.transform.position=new Vector3(0,1.4f,-9f);ceiling.transform.localScale=new Vector3(6,.2f,12);   // z -15 to -3, underside at 1.3 m: room to crouch, not to stand
+   yield return OpenFieldRound(-20f);var controller=motor.GetComponent<CharacterController>();yield return StartRunning();
+   float guard=Time.time+6f;while(motor.transform.position.z<-16.4f&&Time.time<guard)yield return null;
+   yield return TapButton(78,hud.slide);bool crouchedUnder=false,stoodUnder=false;float end=Time.time+8f;
+   while(Time.time<end&&motor.transform.position.z<-2f) {float z=motor.transform.position.z;if(z>-12f&&z<-4f) {if(controller.height<1.3f)crouchedUnder=true;else stoodUnder=true;}yield return null;}
+   Assert.IsTrue(crouchedUnder,"It slides under the ceiling.");Assert.IsFalse(stoodUnder,"It never stands up while the ceiling is above, even after the slide time is over.");
+   guard=Time.time+5f;while(motor.transform.position.z<-1.5f&&Time.time<guard)yield return null;yield return new WaitForSeconds(.6f);StopRunning();yield return new WaitForSeconds(.3f);
+   Assert.AreEqual(1.8f,controller.height,.05f,"It stands up once past the ceiling.");Object.Destroy(ceiling);
+  }
+  [UnityTest] public IEnumerator BoundaryWallsAreTallerThanAnyJumpCanReach() {
+   foreach(var name in new[]{"Boundary west","Boundary east","Boundary south","Boundary north"}) {var wall=GameObject.Find(name);Assert.IsNotNull(wall,name);Assert.GreaterOrEqual(wall.GetComponent<Collider>().bounds.max.y,2.2f,name+" is too low: a jump could clear it.");}
+   yield return null;
+  }
+  Vector2 StickTilt(float canvasPixels) {return Point(hud.joystick)+Vector2.up*(canvasPixels*hud.GetComponent<Canvas>().scaleFactor);}
+  [UnityTest] public IEnumerator FullTiltStickSprintsAndAPartialPushOnlyWalks() {
+   motor.enabled=false;Assert.IsTrue(GameSettings.SprintByJoystick);Assert.IsTrue(session.StartRound("60"));yield return null;
+   Touch(80,UnityEngine.InputSystem.TouchPhase.Began,StickTilt(45));yield return null;yield return null;Assert.Greater(input.Move.magnitude,.4f);Assert.IsFalse(input.Sprint,"A partial push walks.");
+   Touch(80,UnityEngine.InputSystem.TouchPhase.Moved,StickTilt(90));yield return null;yield return null;Assert.IsTrue(input.Sprint,"The edge of the stick sprints.");
+   Touch(80,UnityEngine.InputSystem.TouchPhase.Moved,StickTilt(68));yield return null;yield return null;Assert.IsTrue(input.Sprint,"Easing a little does not drop the sprint (hysteresis).");
+   Touch(80,UnityEngine.InputSystem.TouchPhase.Moved,StickTilt(50));yield return null;yield return null;Assert.IsFalse(input.Sprint,"Easing a lot does.");
+   Touch(80,UnityEngine.InputSystem.TouchPhase.Moved,StickTilt(90));yield return null;yield return null;Assert.IsTrue(input.Sprint);Touch(80,UnityEngine.InputSystem.TouchPhase.Ended,StickTilt(90));yield return null;yield return null;Assert.IsFalse(input.Sprint,"Letting go stops it.");
+  }
+  [UnityTest] public IEnumerator InJoystickModeTheSprintButtonIsHiddenAndIgnored() {
+   motor.enabled=false;Assert.IsTrue(session.StartRound("60"));yield return null;var button=Point(hud.sprint);Assert.IsFalse(hud.sprint.gameObject.activeInHierarchy);
+   Touch(81,UnityEngine.InputSystem.TouchPhase.Began,button);yield return null;yield return null;Assert.IsFalse(input.Sprint);Touch(81,UnityEngine.InputSystem.TouchPhase.Ended,button);yield return null;
+  }
+  [UnityTest] public IEnumerator SprintModeSettingSwitchesBetweenJoystickAndButtonAndIsRemembered() {
+   motor.enabled=false;Assert.IsNotNull(hud.sprintModeButton);hud.settingsButton.onClick.Invoke();yield return null;StringAssert.Contains("JOYSTICK",hud.sprintModeLabel.text);
+   hud.sprintModeButton.onClick.Invoke();yield return null;Assert.IsFalse(GameSettings.SprintByJoystick);StringAssert.Contains("BUTTON",hud.sprintModeLabel.text);
+   hud.languageButton.onClick.Invoke();yield return null;StringAssert.Contains("BOTÓN",hud.sprintModeLabel.text);hud.languageButton.onClick.Invoke();
+   hud.closeSettingsButton.onClick.Invoke();yield return null;Assert.IsTrue(session.StartRound("60"));yield return null;Assert.IsTrue(hud.sprint.gameObject.activeInHierarchy,"The button is back.");
+   var button=Point(hud.sprint);Touch(82,UnityEngine.InputSystem.TouchPhase.Began,button);yield return null;yield return null;Assert.IsTrue(input.Sprint,"Holding the button sprints.");Touch(82,UnityEngine.InputSystem.TouchPhase.Ended,button);yield return null;yield return null;Assert.IsFalse(input.Sprint);
+   Touch(83,UnityEngine.InputSystem.TouchPhase.Began,StickTilt(90));yield return null;yield return null;Assert.IsFalse(input.Sprint,"In button mode a full push does not sprint.");Touch(83,UnityEngine.InputSystem.TouchPhase.Ended,StickTilt(90));yield return null;
+  }
+  [UnityTest] public IEnumerator TitleTabShowsForTheFirstFiveSecondsOfEachRoundOnly() {
+   motor.enabled=false;Assert.IsNotNull(hud.headerGroup);Assert.AreEqual(0f,hud.headerGroup.alpha,.01f,"Not shown in the menu.");
+   Assert.IsTrue(session.StartRound("60"));yield return new WaitForSeconds(.3f);Assert.AreEqual(1f,hud.headerGroup.alpha,.01f);StringAssert.Contains("FIELD OPS",hud.title.text);
+   yield return new WaitForSeconds(5.2f);Assert.AreEqual(0f,hud.headerGroup.alpha,.01f,"Gone after five seconds.");Assert.IsFalse(hud.headerGroup.blocksRaycasts);
+   hud.settingsButton.onClick.Invoke();yield return null;yield return null;Assert.AreEqual(1f,hud.headerGroup.alpha,.01f,"The paused notice shares the header, so it shows while the round is suspended.");
+   hud.closeSettingsButton.onClick.Invoke();yield return null;yield return null;Assert.AreEqual(0f,hud.headerGroup.alpha,.01f);
+   session.Round.Tick(60);yield return null;yield return null;Assert.AreEqual(0f,hud.headerGroup.alpha,.01f,"Not shown on the results screen.");
+   hud.replayButton.onClick.Invoke();yield return new WaitForSeconds(.3f);Assert.AreEqual(1f,hud.headerGroup.alpha,.01f,"A new round shows it again.");
+  }
+  [UnityTest] public IEnumerator PausedTimeDoesNotUseUpTheTitleTab() {
+   motor.enabled=false;Assert.IsTrue(session.StartRound("60"));yield return new WaitForSeconds(1f);session.SetPause(true);yield return new WaitForSeconds(5f);session.SetPause(false);yield return new WaitForSeconds(.3f);
+   Assert.Greater(hud.headerGroup.alpha,.9f,"Only about 1.3 s of play time has passed.");
+  }
+  [UnityTest] public IEnumerator SettingsShowTheGameTitleAsAHeaderLine() {
+   Assert.IsNotNull(hud.settingsSubtitle);hud.settingsButton.onClick.Invoke();yield return null;Assert.AreEqual("FIELD OPS / PROTOTYPE",hud.settingsSubtitle.text);Assert.IsTrue(hud.settingsSubtitle.gameObject.activeInHierarchy);
+   var panel=(RectTransform)hud.settingsPanel.transform;var corners=new Vector3[4];panel.GetWorldCorners(corners);var box=((RectTransform)hud.settingsSubtitle.transform);var sub=new Vector3[4];box.GetWorldCorners(sub);
+   Assert.Greater(sub[0].y,corners[0].y);Assert.Less(sub[1].y,corners[1].y,"The subtitle sits inside the panel.");
+   var title=(RectTransform)hud.settingsTitle.transform;var t=new Vector3[4];title.GetWorldCorners(t);Assert.GreaterOrEqual(t[0].y,sub[1].y-1f,"It does not overlap the settings title.");
+   hud.closeSettingsButton.onClick.Invoke();yield return null;
+  }
+  RectTransform LanguageRect() {return (RectTransform)hud.languageButton.transform;}
+  [UnityTest] public IEnumerator LanguageButtonAndFpsCounterCanBeDraggedSavedAndRestoredAfterAReload() {
+   var langDefault=LanguageRect().anchoredPosition;var fpsDefault=hud.fpsLabel.rectTransform.anchoredPosition;yield return OpenLayoutEditor();
+   var from=Point(LanguageRect());yield return Drag(90,from,from+new Vector2(-250,-400)*CanvasScale());var langMoved=LanguageRect().anchoredPosition-langDefault;Assert.AreEqual(-250,langMoved.x,3f);Assert.AreEqual(-400,langMoved.y,3f);
+   from=Point(hud.fpsLabel.rectTransform);yield return Drag(91,from,from+new Vector2(-450,-120)*CanvasScale());var fpsMoved=hud.fpsLabel.rectTransform.anchoredPosition-fpsDefault;Assert.AreEqual(-450,fpsMoved.x,3f);Assert.AreEqual(-120,fpsMoved.y,3f);
+   Assert.IsTrue(hud.saveLayoutButton.interactable);var savedLang=LanguageRect().anchoredPosition;var savedFps=hud.fpsLabel.rectTransform.anchoredPosition;hud.saveLayoutButton.onClick.Invoke();yield return null;Assert.IsTrue(PlayerPrefs.HasKey("hudLayout"));
+   yield return SceneManager.LoadSceneAsync("TrainingRange");yield return null;yield return null;var reloaded=Object.FindFirstObjectByType<PrototypeHud>();Canvas.ForceUpdateCanvases();
+   Assert.AreEqual(savedLang.x,((RectTransform)reloaded.languageButton.transform).anchoredPosition.x,.5f);Assert.AreEqual(savedLang.y,((RectTransform)reloaded.languageButton.transform).anchoredPosition.y,.5f);
+   Assert.AreEqual(savedFps.x,reloaded.fpsLabel.rectTransform.anchoredPosition.x,.5f);Assert.AreEqual(savedFps.y,reloaded.fpsLabel.rectTransform.anchoredPosition.y,.5f);
+  }
+  [UnityTest] public IEnumerator DraggingTheLanguageButtonNeverSwitchesTheLanguage() {
+   yield return OpenLayoutEditor();Assert.IsFalse(hud.languageButton.interactable,"The button is inert while editing, so a drag is never a click.");
+   var from=Point(LanguageRect());yield return Drag(92,from,from+new Vector2(-250,-400)*CanvasScale());Assert.AreEqual(0,PlayerPrefs.GetInt("language",0));Assert.AreEqual("FIRE",hud.fireLabel.text);
+   hud.cancelLayoutButton.onClick.Invoke();yield return null;yield return null;Assert.IsTrue(hud.languageButton.interactable,"It works again after editing.");
+  }
+  [UnityTest] public IEnumerator FpsCounterCanBePlacedEvenWhileItIsHidden() {
+   hud.fpsButton.onClick.Invoke();yield return null;Assert.IsFalse(GameSettings.ShowFps);Assert.IsFalse(hud.fpsLabel.gameObject.activeInHierarchy);
+   yield return OpenLayoutEditor();Assert.IsTrue(hud.fpsLabel.gameObject.activeInHierarchy,"It shows while editing so it can be placed.");
+   var from=Point(hud.fpsLabel.rectTransform);yield return Drag(93,from,from+new Vector2(-450,-120)*CanvasScale());Assert.IsTrue(hud.saveLayoutButton.interactable);hud.saveLayoutButton.onClick.Invoke();yield return null;yield return null;
+   Assert.IsFalse(hud.fpsLabel.gameObject.activeInHierarchy,"Hidden again after editing because the option is off.");Assert.IsTrue(PlayerPrefs.HasKey("hudLayout"));
+  }
+  [UnityTest] public IEnumerator MovedLanguageButtonIsTheMenuSpotAndTheOldSpotPlaysAgain() {
+   var oldPoint=Point(LanguageRect());yield return OpenLayoutEditor();yield return Drag(94,oldPoint,oldPoint+new Vector2(-250,-400)*CanvasScale());var newPoint=Point(LanguageRect());hud.saveLayoutButton.onClick.Invoke();yield return null;
+   Assert.IsTrue(session.StartRound("60"));yield return null;Canvas.ForceUpdateCanvases();Assert.IsTrue(hud.IsMenu(newPoint),"The moved button is the menu spot.");Assert.IsFalse(hud.IsMenu(oldPoint),"The old spot is free again.");
+  }
+  [UnityTest] public IEnumerator PlacingTheFpsCounterOnTheLanguageButtonBlocksSavingAndResetRestoresBoth() {
+   var langDefault=LanguageRect().anchoredPosition;var fpsDefault=hud.fpsLabel.rectTransform.anchoredPosition;yield return OpenLayoutEditor();
+   var fps=Point(hud.fpsLabel.rectTransform);var lang=Point(LanguageRect());yield return Drag(95,fps,lang);Assert.IsFalse(hud.saveLayoutButton.interactable);hud.saveLayoutButton.onClick.Invoke();yield return null;Assert.IsTrue(hud.EditingLayout);
+   hud.resetLayoutButton.onClick.Invoke();yield return null;Assert.IsTrue(hud.saveLayoutButton.interactable);Assert.AreEqual(langDefault,LanguageRect().anchoredPosition);Assert.AreEqual(fpsDefault,hud.fpsLabel.rectTransform.anchoredPosition);
+   hud.saveLayoutButton.onClick.Invoke();yield return null;Assert.IsFalse(PlayerPrefs.HasKey("hudLayout"),"Defaults store nothing.");
   }
   [UnityTest] public IEnumerator ImpactMarksNeedNoRuntimePrimitiveSoTheBuildDoesNotStripTheColliderClass() {
    Assert.IsNotNull(target.markMesh,"The mark mesh is serialized in the scene.");
