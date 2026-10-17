@@ -55,6 +55,11 @@ namespace FieldOps {
     case "sprint": return spanish?"ESPRINTAR":"SPRINT";
     case "jump": return spanish?"SALTAR":"JUMP";
     case "sprintMode": return spanish?"MODO DE CARRERA":"SPRINT MODE";
+    case "sprintSens": return spanish?"SENSIBILIDAD DE CARRERA":"SPRINT SENSITIVITY";
+    case "sensHigh": return spanish?"ALTA":"HIGH";
+    case "sensMedium": return spanish?"MEDIA":"MEDIUM";
+    case "sensLow": return spanish?"BAJA":"LOW";
+    case "sensNote": return spanish?"SOLO MODO JOYSTICK":"JOYSTICK MODE ONLY";
     case "stick": return "JOYSTICK";
     case "button": return spanish?"BOTÓN":"BUTTON";
     case "slide": return spanish?"DESLIZAR":"SLIDE";

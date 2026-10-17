@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 namespace FieldOps {
  public sealed class PrototypeHud : MonoBehaviour {
-  public RectTransform safeRoot, joystick, stick, fire, sprint, reload, aim, jump, slide;public CanvasGroup headerGroup;public Text settingsSubtitle;public Button sprintModeButton;public Text sprintModeLabel;public bool SprintByJoystick { get; private set; }
+  public RectTransform safeRoot, joystick, stick, fire, sprint, reload, aim, jump, slide;public CanvasGroup headerGroup;public Text settingsSubtitle;public Button sprintSensButton;public Text sprintSensLabel;public Button sprintModeButton;public Text sprintModeLabel;public bool SprintByJoystick { get; private set; }public SprintSensitivity SprintLevel { get; private set; }
   public Button languageButton, resetButton, startButton, replayButton, configureButton;
   public Text jumpLabel, slideLabel, title, status, moveLabel, lookLabel, fireLabel, sprintLabel, resetLabel, hitLabel, help;
   public Text roundTitle,durationLabel,durationError,scoreRule,timerLabel,resultTitle,resultScore;
@@ -32,7 +32,7 @@ namespace FieldOps {
   bool spanish,invalidDuration; Rect lastSafe; int lastWidth,lastHeight;
   void Start() {
    spanish=PlayerPrefs.GetInt("language",0)==1;languageButton.onClick.AddListener(ToggleLanguage);
-   SprintByJoystick=GameSettings.SprintByJoystick;sprintModeButton.onClick.AddListener(ToggleSprintMode);showFps=GameSettings.ShowFps;fpsButton.onClick.AddListener(ToggleFps);fpsLabel.text="-- FPS";
+   SprintByJoystick=GameSettings.SprintByJoystick;SprintLevel=GameSettings.SprintSensitivity;sprintModeButton.onClick.AddListener(ToggleSprintMode);sprintSensButton.onClick.AddListener(ToggleSprintSens);showFps=GameSettings.ShowFps;fpsButton.onClick.AddListener(ToggleFps);fpsLabel.text="-- FPS";
    settingsButton.onClick.AddListener(OpenSettings);closeSettingsButton.onClick.AddListener(CloseSettings);aimModeButton.onClick.AddListener(ToggleAimMode);crossButton.onClick.AddListener(ToggleCross);settingsPanel.SetActive(false);
    startButton.onClick.AddListener(StartSelectedRound);replayButton.onClick.AddListener(Replay);configureButton.onClick.AddListener(Configure);
    durationInput.onValueChanged.AddListener(_=>{if(invalidDuration){invalidDuration=false;Refresh();}});
@@ -123,6 +123,7 @@ namespace FieldOps {
   void OpenSettings() {settingsPanel.SetActive(true);session.SetSettingsOpen(true);Refresh();}
   void CloseSettings() {settingsPanel.SetActive(false);session.SetSettingsOpen(false);Refresh();}
   void ToggleAimMode() {GameSettings.AimToggle=!GameSettings.AimToggle;rifle.Aim.Toggle=GameSettings.AimToggle;rifle.Aim.Reset();Refresh();}
+  void ToggleSprintSens() {SprintLevel=(SprintSensitivity)(((int)SprintLevel+1)%3);GameSettings.SprintSensitivity=SprintLevel;Refresh();}   // medium -> low -> high -> medium
   void ToggleSprintMode() {SprintByJoystick=!SprintByJoystick;GameSettings.SprintByJoystick=SprintByJoystick;Refresh();}
   void ToggleFps() {showFps=!GameSettings.ShowFps;GameSettings.ShowFps=showFps;Refresh();}
   void RefreshFpsText() {
@@ -134,6 +135,7 @@ namespace FieldOps {
    aimLabel.text=GameText.Get("aim",spanish);settingsTitle.text=GameText.Get("settings",spanish);settingsButton.GetComponentInChildren<Text>().text=GameText.Get("settings",spanish);closeSettingsButton.GetComponentInChildren<Text>().text=GameText.Get("close",spanish);
    aimModeLabel.text=GameText.Get("aimMode",spanish)+": "+GameText.Get(GameSettings.AimToggle?"toggle":"hold",spanish);crossLabel.text=GameText.Get("keepCross",spanish)+": "+GameText.Get(GameSettings.KeepCrossWhileAiming?"on":"off",spanish);
    sprintModeLabel.text=GameText.Get("sprintMode",spanish)+": "+GameText.Get(SprintByJoystick?"stick":"button",spanish);
+   sprintSensLabel.text=GameText.Get("sprintSens",spanish)+": "+GameText.Get(SprintLevel==SprintSensitivity.High?"sensHigh":SprintLevel==SprintSensitivity.Low?"sensLow":"sensMedium",spanish)+(SprintByJoystick?"":"  ·  "+GameText.Get("sensNote",spanish));sprintSensButton.interactable=SprintByJoystick;
    fpsButton.GetComponentInChildren<Text>().text=GameText.Get("fpsCounter",spanish)+": "+GameText.Get(showFps?"on":"off",spanish);
    editLayoutButton.GetComponentInChildren<Text>().text=GameText.Get("editLayout",spanish);saveLayoutButton.GetComponentInChildren<Text>().text=GameText.Get("save",spanish);resetLayoutButton.GetComponentInChildren<Text>().text=GameText.Get("resetLayout",spanish);cancelLayoutButton.GetComponentInChildren<Text>().text=GameText.Get("cancel",spanish);
    if(movable!=null)RefreshLayoutState();

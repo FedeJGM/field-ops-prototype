@@ -58,7 +58,8 @@ namespace FieldOps {
     switch(active) {case Role.Move:Move=hud.JoystickValue(touch.screenPosition);break;case Role.Look:Look+=touch.delta/Mathf.Max(1,Screen.height)*105f;break;case Role.Fire:Fire=true;break;case Role.Sprint:Sprint=true;break;case Role.Aim:AimHeld=true;break;case Role.Jump:JumpHeld=true;break;}
    }
    // In joystick mode the sprint comes from pushing the stick to its edge; the sprint button is hidden then.
-   if(hud.SprintByJoystick)Sprint=stickSprint.Update(Move.magnitude);else stickSprint.Reset();
+   stickSprint.Level=hud.SprintLevel;
+   if(hud.SprintByJoystick)Sprint=stickSprint.Update(Move);else stickSprint.Reset();
    if(!Application.isMobilePlatform) {
     var kb=Keyboard.current;var mouse=Mouse.current;
     if(mouse==null||!mouse.leftButton.isPressed)requireMouseRelease=false;

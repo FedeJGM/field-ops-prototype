@@ -138,16 +138,17 @@ namespace FieldOps.Editor {
    panel.gameObject.SetActive(false);
   }
   static void CreateSettingsMenu(PrototypeHud hud,RectTransform safe) {
-   var panel=Panel("Settings panel",safe,new Vector2(.5f,.5f),Vector2.zero,new Vector2(760,800),new Color(.09f,.14f,.15f,1f));panel.GetComponent<Image>().raycastTarget=true;hud.settingsPanel=panel.gameObject;
-   hud.settingsTitle=Label("Settings title",panel,new Vector2(.5f,.5f),new Vector2(0,350),new Vector2(710,55),32);
-   hud.settingsSubtitle=Label("Settings subtitle",panel,new Vector2(.5f,.5f),new Vector2(0,305),new Vector2(710,26),18);hud.settingsSubtitle.color=new Color(.9f,.76f,.42f,.8f);
-   hud.aimModeButton=MenuButton("Aim mode",panel,new Vector2(.5f,.5f),new Vector2(0,250),new Vector2(680,70));hud.aimModeLabel=hud.aimModeButton.GetComponentInChildren<Text>();
-   hud.crossButton=MenuButton("Keep cross",panel,new Vector2(.5f,.5f),new Vector2(0,175),new Vector2(680,70));hud.crossLabel=hud.crossButton.GetComponentInChildren<Text>();
-   hud.fpsButton=MenuButton("FPS counter",panel,new Vector2(.5f,.5f),new Vector2(0,100),new Vector2(680,70));
-   hud.sprintModeButton=MenuButton("Sprint mode",panel,new Vector2(.5f,.5f),new Vector2(0,25),new Vector2(680,70));hud.sprintModeLabel=hud.sprintModeButton.GetComponentInChildren<Text>();
-   hud.editLayoutButton=MenuButton("Edit layout",panel,new Vector2(.5f,.5f),new Vector2(0,-50),new Vector2(680,70));
-   hud.settingsWeapon=CreateWeaponSelector(panel,-125);
-   hud.closeSettingsButton=MenuButton("Close settings",panel,new Vector2(.5f,.5f),new Vector2(0,-320),new Vector2(420,65));
+   var panel=Panel("Settings panel",safe,new Vector2(.5f,.5f),Vector2.zero,new Vector2(760,760),new Color(.09f,.14f,.15f,1f));panel.GetComponent<Image>().raycastTarget=true;hud.settingsPanel=panel.gameObject;
+   hud.settingsTitle=Label("Settings title",panel,new Vector2(.5f,.5f),new Vector2(0,340),new Vector2(710,55),32);
+   hud.settingsSubtitle=Label("Settings subtitle",panel,new Vector2(.5f,.5f),new Vector2(0,298),new Vector2(710,26),18);hud.settingsSubtitle.color=new Color(.9f,.76f,.42f,.8f);
+   hud.aimModeButton=MenuButton("Aim mode",panel,new Vector2(.5f,.5f),new Vector2(0,246),new Vector2(680,58));hud.aimModeLabel=hud.aimModeButton.GetComponentInChildren<Text>();
+   hud.crossButton=MenuButton("Keep cross",panel,new Vector2(.5f,.5f),new Vector2(0,184),new Vector2(680,58));hud.crossLabel=hud.crossButton.GetComponentInChildren<Text>();
+   hud.fpsButton=MenuButton("FPS counter",panel,new Vector2(.5f,.5f),new Vector2(0,122),new Vector2(680,58));
+   hud.sprintModeButton=MenuButton("Sprint mode",panel,new Vector2(.5f,.5f),new Vector2(0,60),new Vector2(680,58));hud.sprintModeLabel=hud.sprintModeButton.GetComponentInChildren<Text>();
+   hud.sprintSensButton=MenuButton("Sprint sensitivity",panel,new Vector2(.5f,.5f),new Vector2(0,-2),new Vector2(680,58));hud.sprintSensLabel=hud.sprintSensButton.GetComponentInChildren<Text>();
+   hud.editLayoutButton=MenuButton("Edit layout",panel,new Vector2(.5f,.5f),new Vector2(0,-64),new Vector2(680,58));
+   hud.settingsWeapon=CreateWeaponSelector(panel,-135);
+   hud.closeSettingsButton=MenuButton("Close settings",panel,new Vector2(.5f,.5f),new Vector2(0,-325),new Vector2(420,58));
    panel.gameObject.SetActive(false);
   }
   static void CreateRoundMenu(PrototypeHud hud,RectTransform safe) {

@@ -4,6 +4,16 @@ using UnityEngine;
 using UnityEngine.UI;
 namespace FieldOps.Tests {
  public class TrainingUiTests {
+  // The canvas scales with the screen (reference 1600x900, match 0.5), so tall panels overflow on very wide phones.
+  static float CanvasHeight(float screenWidth,float screenHeight) { float scale=Mathf.Pow(2f,.5f*Mathf.Log(screenWidth/1600f,2f)+.5f*Mathf.Log(screenHeight/900f,2f));return screenHeight/scale; }
+  [Test] public void SettingsPanelFitsEvenOnAVeryWidePhoneAndItsRowsStayInside() {
+   EditorSceneManager.OpenScene("Assets/FieldOps/Scenes/TrainingRange.unity",OpenSceneMode.Single);
+   Assert.AreEqual(804.7f,CanvasHeight(2712,1220),1f,"The helper matches the measured phone.");
+   float worst=Mathf.Min(CanvasHeight(2712,1220),CanvasHeight(2400,1080),CanvasHeight(2520,1080));   // 20:9 and 21:9
+   var panel=(RectTransform)GameObject.Find("HUD").transform.Find("Safe area/Settings panel");Assert.IsNotNull(panel,"The settings panel is inactive in the saved scene, so it is found by path.");Assert.LessOrEqual(panel.sizeDelta.y+20f,worst,"The settings panel is "+panel.sizeDelta.y+" tall; the narrowest phone canvas is "+worst+".");
+   foreach(RectTransform child in panel) {if(!child.gameObject.activeSelf&&child.name!="Sprint sensitivity")continue;float top=child.anchoredPosition.y+child.sizeDelta.y*.5f,bottom=child.anchoredPosition.y-child.sizeDelta.y*.5f;Assert.LessOrEqual(top,panel.sizeDelta.y*.5f+.1f,child.name+" top");Assert.GreaterOrEqual(bottom,-panel.sizeDelta.y*.5f-.1f,child.name+" bottom");}
+   Assert.IsNotNull(panel.Find("Sprint sensitivity"));
+  }
   [Test] public void SavedSceneHasNumericDurationAndRoundActions() {
    EditorSceneManager.OpenScene("Assets/FieldOps/Scenes/TrainingRange.unity",OpenSceneMode.Single);
    var root=GameObject.Find("HUD");var field=root.GetComponentInChildren<InputField>(true);Assert.IsNotNull(field,"Duration must be editable in the actual saved mobile scene.");

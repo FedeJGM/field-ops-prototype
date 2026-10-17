@@ -11,7 +11,7 @@ namespace FieldOps.Tests {
  public class RuntimeSmokeTests {
   TrainingSession session; PrototypeInput input; FirstPersonMotor motor; TrainingTarget target; PrototypeHud hud; Touchscreen screen;
   [UnitySetUp] public IEnumerator LoadScene() {
-   PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");PlayerPrefs.DeleteKey("weapon");PlayerPrefs.DeleteKey("showFps");PlayerPrefs.DeleteKey("sprintMode");
+   PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");PlayerPrefs.DeleteKey("weapon");PlayerPrefs.DeleteKey("showFps");PlayerPrefs.DeleteKey("sprintMode");PlayerPrefs.DeleteKey("sprintSens");
    yield return SceneManager.LoadSceneAsync("TrainingRange");
    yield return null; yield return null;
    input=Object.FindFirstObjectByType<PrototypeInput>();motor=Object.FindFirstObjectByType<FirstPersonMotor>();target=Object.FindFirstObjectByType<TrainingTarget>();hud=Object.FindFirstObjectByType<PrototypeHud>();
@@ -22,7 +22,7 @@ namespace FieldOps.Tests {
    session=Object.FindFirstObjectByType<TrainingSession>();session.SetPause(false);session.SetFocus(true);
    screen=InputSystem.AddDevice<Touchscreen>();InputSystem.EnableDevice(screen);Canvas.ForceUpdateCanvases();
   }
-  [UnityTearDown] public IEnumerator Cleanup() {InputSystem.RemoveDevice(screen);PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");PlayerPrefs.DeleteKey("weapon");PlayerPrefs.DeleteKey("showFps");PlayerPrefs.DeleteKey("sprintMode");yield return null;}
+  [UnityTearDown] public IEnumerator Cleanup() {InputSystem.RemoveDevice(screen);PlayerPrefs.SetInt("language",0);PlayerPrefs.DeleteKey("aimToggle");PlayerPrefs.DeleteKey("keepCross");PlayerPrefs.DeleteKey("hudLayout");PlayerPrefs.DeleteKey("weapon");PlayerPrefs.DeleteKey("showFps");PlayerPrefs.DeleteKey("sprintMode");PlayerPrefs.DeleteKey("sprintSens");yield return null;}
   Vector2 Point(RectTransform rect) {return RectTransformUtility.WorldToScreenPoint(null,rect.position);}
   void Touch(int id,UnityEngine.InputSystem.TouchPhase phase,Vector2 point) {InputSystem.QueueStateEvent(screen,new TouchState {touchId=id,phase=phase,position=point});}
   [UnityTest] public IEnumerator SceneRendersWithConfiguredRuntimeObjects() {
@@ -503,6 +503,60 @@ namespace FieldOps.Tests {
    var fps=Point(hud.fpsLabel.rectTransform);var lang=Point(LanguageRect());yield return Drag(95,fps,lang);Assert.IsFalse(hud.saveLayoutButton.interactable);hud.saveLayoutButton.onClick.Invoke();yield return null;Assert.IsTrue(hud.EditingLayout);
    hud.resetLayoutButton.onClick.Invoke();yield return null;Assert.IsTrue(hud.saveLayoutButton.interactable);Assert.AreEqual(langDefault,LanguageRect().anchoredPosition);Assert.AreEqual(fpsDefault,hud.fpsLabel.rectTransform.anchoredPosition);
    hud.saveLayoutButton.onClick.Invoke();yield return null;Assert.IsFalse(PlayerPrefs.HasKey("hudLayout"),"Defaults store nothing.");
+  }
+  [UnityTest] public IEnumerator SprintSensitivityButtonCyclesLevelsAndChangesHowFarTheStickMustGo() {
+   motor.enabled=false;Assert.IsNotNull(hud.sprintSensButton);hud.settingsButton.onClick.Invoke();yield return null;StringAssert.Contains("MEDIUM",hud.sprintSensLabel.text);
+   hud.sprintSensButton.onClick.Invoke();yield return null;Assert.AreEqual(SprintSensitivity.Low,GameSettings.SprintSensitivity);StringAssert.Contains("LOW",hud.sprintSensLabel.text);
+   hud.sprintSensButton.onClick.Invoke();yield return null;Assert.AreEqual(SprintSensitivity.High,GameSettings.SprintSensitivity);StringAssert.Contains("HIGH",hud.sprintSensLabel.text);
+   hud.languageButton.onClick.Invoke();yield return null;StringAssert.Contains("ALTA",hud.sprintSensLabel.text);hud.languageButton.onClick.Invoke();
+   hud.closeSettingsButton.onClick.Invoke();yield return null;Assert.IsTrue(session.StartRound("60"));yield return null;
+   Touch(100,UnityEngine.InputSystem.TouchPhase.Began,StickTilt(66));yield return null;yield return null;Assert.IsTrue(input.Sprint,"High sensitivity sprints with a short push (about 82 percent).");Touch(100,UnityEngine.InputSystem.TouchPhase.Ended,StickTilt(66));yield return null;yield return null;
+   hud.settingsButton.onClick.Invoke();yield return null;hud.sprintSensButton.onClick.Invoke();yield return null;hud.sprintSensButton.onClick.Invoke();yield return null;Assert.AreEqual(SprintSensitivity.Low,GameSettings.SprintSensitivity);hud.closeSettingsButton.onClick.Invoke();yield return null;
+   Touch(101,UnityEngine.InputSystem.TouchPhase.Began,StickTilt(74));yield return null;yield return null;Assert.IsFalse(input.Sprint,"Low sensitivity needs about 97 percent.");Touch(101,UnityEngine.InputSystem.TouchPhase.Moved,StickTilt(80));yield return null;yield return null;Assert.IsTrue(input.Sprint);Touch(101,UnityEngine.InputSystem.TouchPhase.Ended,StickTilt(80));yield return null;
+  }
+  [UnityTest] public IEnumerator SensitivityRowIsInertWhenSprintIsOnTheButtonAndExplainsWhy() {
+   hud.sprintModeButton.onClick.Invoke();hud.settingsButton.onClick.Invoke();yield return null;Assert.IsFalse(hud.sprintSensButton.interactable);StringAssert.Contains("JOYSTICK MODE ONLY",hud.sprintSensLabel.text);
+   hud.sprintModeButton.onClick.Invoke();yield return null;Assert.IsTrue(hud.sprintSensButton.interactable);StringAssert.DoesNotContain("ONLY",hud.sprintSensLabel.text);
+  }
+  float MuzzleRise() {var rifle=hud.rifle;return rifle.muzzleFlash.transform.position.y-Camera.main.transform.position.y;}
+  [UnityTest] public IEnumerator SprintingRaisesTheWeaponAndReleasingLowersItAgain() {
+   motor.enabled=false;var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return new WaitForSeconds(.4f);float hip=MuzzleRise();Assert.AreEqual(0f,rifle.Sprint.Blend,.001f);
+   Touch(110,UnityEngine.InputSystem.TouchPhase.Began,StickTilt(90));yield return new WaitForSeconds(.6f);
+   Assert.IsTrue(input.Sprint);Assert.AreEqual(1f,rifle.Sprint.Blend,.05f);Assert.Greater(MuzzleRise()-hip,.2f,"The muzzle points up while sprinting.");yield return CapturePreview("sprint-pose.bmp");
+   Touch(110,UnityEngine.InputSystem.TouchPhase.Ended,StickTilt(90));yield return new WaitForSeconds(.4f);
+   Assert.AreEqual(0f,rifle.Sprint.Blend,.02f);Assert.AreEqual(hip,MuzzleRise(),.03f,"Back to the firing pose.");
+  }
+  [UnityTest] public IEnumerator FiringWhileSprintingDropsTheWeaponAndStillHitsTheTarget() {
+   motor.enabled=false;var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;AimAtTarget();
+   Touch(111,UnityEngine.InputSystem.TouchPhase.Began,StickTilt(90));yield return new WaitForSeconds(.5f);Assert.Greater(rifle.Sprint.Blend,.9f);
+   var fire=Point(hud.fire);Touch(112,UnityEngine.InputSystem.TouchPhase.Began,fire);yield return new WaitForSeconds(.35f);
+   Assert.Less(rifle.Sprint.Blend,.05f,"The weapon drops to the firing pose.");Assert.Greater(rifle.Ammo.Capacity-rifle.Ammo.Count,0,"It fired.");Assert.Greater(target.Damage.Hits,0,"And it hit.");
+   Touch(112,UnityEngine.InputSystem.TouchPhase.Ended,fire);Touch(111,UnityEngine.InputSystem.TouchPhase.Ended,StickTilt(90));yield return null;
+  }
+  [UnityTest] public IEnumerator HoldingTheSprintButtonWithoutMovingDoesNotRaiseTheWeapon() {
+   motor.enabled=false;hud.sprintModeButton.onClick.Invoke();var rifle=hud.rifle;Assert.IsTrue(session.StartRound("60"));yield return null;Canvas.ForceUpdateCanvases();
+   var button=Point(hud.sprint);Touch(113,UnityEngine.InputSystem.TouchPhase.Began,button);yield return new WaitForSeconds(.5f);Assert.IsTrue(input.Sprint);Assert.AreEqual(0f,rifle.Sprint.Blend,.001f,"Standing still.");Touch(113,UnityEngine.InputSystem.TouchPhase.Ended,button);yield return null;
+  }
+  [UnityTest] public IEnumerator SlidingKeepsTheNormalPoseInsteadOfTheSprintPose() {
+   yield return OpenFieldRound();var rifle=hud.rifle;yield return StartRunning();yield return new WaitForSeconds(.8f);Assert.Greater(rifle.Sprint.Blend,.9f,"Raised while running.");
+   yield return TapButton(114,hud.slide);yield return new WaitForSeconds(.4f);Assert.AreEqual(MoveState.Sliding,motor.Model.State);Assert.Less(rifle.Sprint.Blend,.1f,"Lowered during the slide.");StopRunning();yield return null;
+  }
+  Vector2 StickDir(float degreesFromForward,float canvasPixels=90f) {float r=degreesFromForward*Mathf.Deg2Rad;return Point(hud.joystick)+new Vector2(Mathf.Sin(r),Mathf.Cos(r))*(canvasPixels*CanvasScale());}
+  [UnityTest] public IEnumerator StrafingHardToBothSidesWhileAimingKeepsTheAimAndOnlyWalks() {
+   motor.enabled=false;Assert.IsTrue(session.StartRound("60"));yield return null;var rifle=hud.rifle;var aim=Point(hud.aim);Touch(120,UnityEngine.InputSystem.TouchPhase.Began,aim);yield return new WaitForSeconds(.3f);Assert.IsTrue(rifle.Aim.Aiming);
+   Touch(121,UnityEngine.InputSystem.TouchPhase.Began,StickDir(90));yield return new WaitForSeconds(.4f);Assert.Greater(input.Move.x,.9f,"Full push to the right.");Assert.IsFalse(input.Sprint,"Sideways never sprints.");Assert.IsTrue(rifle.Aim.Aiming,"The aim stays.");
+   Touch(121,UnityEngine.InputSystem.TouchPhase.Moved,StickDir(-90));yield return new WaitForSeconds(.4f);Assert.Less(input.Move.x,-.9f,"Full push to the left.");Assert.IsFalse(input.Sprint);Assert.IsTrue(rifle.Aim.Aiming,"Still aiming after switching sides.");
+   Touch(121,UnityEngine.InputSystem.TouchPhase.Moved,StickDir(45));yield return new WaitForSeconds(.3f);Assert.IsFalse(input.Sprint,"A forward-right diagonal does not sprint either.");Assert.IsTrue(rifle.Aim.Aiming);
+   Touch(121,UnityEngine.InputSystem.TouchPhase.Ended,StickDir(45));Touch(120,UnityEngine.InputSystem.TouchPhase.Ended,aim);yield return null;
+  }
+  [UnityTest] public IEnumerator PushingStraightForwardToTheEdgeStillSprintsAndLeavesTheAim() {
+   motor.enabled=false;Assert.IsTrue(session.StartRound("60"));yield return null;var rifle=hud.rifle;var aim=Point(hud.aim);Touch(122,UnityEngine.InputSystem.TouchPhase.Began,aim);yield return new WaitForSeconds(.3f);Assert.IsTrue(rifle.Aim.Aiming);
+   Touch(123,UnityEngine.InputSystem.TouchPhase.Began,StickDir(0));yield return new WaitForSeconds(.3f);Assert.IsTrue(input.Sprint);Assert.IsFalse(rifle.Aim.Aiming,"Sprinting forward exits the aim, as in CoD.");
+   Touch(123,UnityEngine.InputSystem.TouchPhase.Ended,StickDir(0));Touch(122,UnityEngine.InputSystem.TouchPhase.Ended,aim);yield return null;
+  }
+  [UnityTest] public IEnumerator StrafingAtTheEdgeMovesAtWalkSpeedNotSprintSpeed() {
+   yield return OpenFieldRound();var start=motor.transform.position;Touch(124,UnityEngine.InputSystem.TouchPhase.Began,StickDir(90));yield return new WaitForSeconds(.8f);
+   Assert.AreEqual(3.5f,motor.Model.Speed,.2f,"Walk speed sideways.");Assert.IsFalse(input.Sprint);Touch(124,UnityEngine.InputSystem.TouchPhase.Ended,StickDir(90));yield return null;
   }
   [UnityTest] public IEnumerator ImpactMarksNeedNoRuntimePrimitiveSoTheBuildDoesNotStripTheColliderClass() {
    Assert.IsNotNull(target.markMesh,"The mark mesh is serialized in the scene.");

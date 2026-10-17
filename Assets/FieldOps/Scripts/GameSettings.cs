@@ -11,6 +11,10 @@ namespace FieldOps {
   }
   public static bool ShowFps { get => PlayerPrefs.GetInt("showFps",1)==1; set {PlayerPrefs.SetInt("showFps",value?1:0);PlayerPrefs.Save();} }
   public static bool SprintByJoystick { get => PlayerPrefs.GetInt("sprintMode",1)==1; set {PlayerPrefs.SetInt("sprintMode",value?1:0);PlayerPrefs.Save();} }
+  public static SprintSensitivity SprintSensitivity {
+   get {int value=PlayerPrefs.GetInt("sprintSens",(int)SprintSensitivity.Medium);return value>=0&&value<=2?(SprintSensitivity)value:SprintSensitivity.Medium;}
+   set {PlayerPrefs.SetInt("sprintSens",(int)value);PlayerPrefs.Save();}
+  }
   public const int DefaultWeapon=1;
   public static int SelectedWeapon { get => PlayerPrefs.GetInt("weapon",DefaultWeapon); set {PlayerPrefs.SetInt("weapon",value);PlayerPrefs.Save();} }
   public static bool KeepCrossWhileAiming { get => PlayerPrefs.GetInt(KeepCrossKey,0)==1; set {PlayerPrefs.SetInt(KeepCrossKey,value?1:0);PlayerPrefs.Save();} }
