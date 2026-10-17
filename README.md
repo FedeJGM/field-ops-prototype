@@ -2,10 +2,10 @@
 
 **[English](#english) · [Español](#español)**
 
-![Aiming through the assault rifle iron sights on the phone: soldier target with amber impact marks, score, damage, timer, ammo and FPS counter, Spanish interface / Apuntando por las miras de hierro del fusil de asalto en el teléfono: blanco soldado con marcas de impacto ámbar, puntaje, daño, tiempo, munición y contador de FPS, interfaz en español](docs/images/android-gameplay.jpg)
+![Firing the assault rifle from a crouch on the phone: soldier target with amber impact marks, score, damage, timer, ammo, FPS counter and the CROUCH button, Spanish interface / Disparando el fusil de asalto agachado en el teléfono: blanco soldado con marcas de impacto ámbar, puntaje, daño, tiempo, munición, contador de FPS y botón de agacharse, interfaz en español](docs/images/android-gameplay.jpg)
 
-*EN: screenshot taken on the Motorola edge 60 fusion (development build, hence the "Development Build" label) while aiming through the assault rifle iron sights: 6 points, 150 damage, amber marks on the soldier, 60 FPS and the player's own button layout (AIM moved to the top-left).*
-*ES: captura tomada en el Motorola edge 60 fusion (compilación de desarrollo, de ahí la etiqueta "Development Build") apuntando por las miras de hierro del fusil de asalto: 6 puntos, 150 de daño, marcas ámbar en el soldado, 60 FPS y la disposición de botones propia del jugador (APUNTAR movido arriba a la izquierda).*
+*EN: screenshot taken on the Motorola edge 60 fusion (development build, hence the "Development Build" label) while crouched and firing the assault rifle at the soldier target: 6 points, 150 damage, 24 rounds left, amber marks on the soldier, 60 FPS, the new CROUCH button (labelled AGACHARSE in Spanish) and the player's own button layout (AIM moved to the top-left).*
+*ES: captura tomada en el Motorola edge 60 fusion (compilación de desarrollo, de ahí la etiqueta "Development Build") agachado y disparando el fusil de asalto al blanco soldado: 6 puntos, 150 de daño, 24 balas restantes, marcas ámbar en el soldado, 60 FPS, el nuevo botón de agacharse (AGACHARSE) y la disposición de botones propia del jugador (APUNTAR movido arriba a la izquierda).*
 
 ---
 
