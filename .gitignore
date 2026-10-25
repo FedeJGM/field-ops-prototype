@@ -36,3 +36,5 @@ Thumbs.db
 *.userprefs
 credentials*.json
 service-account*.json
+# Local evidence log, kept out of the repository
+VERIFICATION.md
