@@ -57,7 +57,7 @@ Configuration and results menus block movement, looking, firing and mouse captur
 3. Install that APK, or use Unity's Android build profile with this scene and **Build And Run** after selecting the phone.
 4. On the phone, check numeric keyboard entry, invalid durations, a short round ending at zero, replay and change-duration, language switching, move/look/sprint/fire together, reload and ammunition, aiming in both modes, the settings menu, weapon selection and per-weapon sound, button layout editing, the FPS counter, shots at every part of the soldier from all sides, and background/resume while holding controls.
 
-The first import and IL2CPP build can take several minutes. A compiled APK exists locally for the demonstration; no GitHub release or APK download is provided by this source repository. Google Play publication and release signing are not included. Never commit signing keys or credentials.
+The first import and IL2CPP build can take several minutes. A compiled development APK is available to download from the [v1.0.0 release](https://github.com/FedeJGM/field-ops-prototype/releases/latest) (Android 8.0 or newer, 64-bit ARM, OpenGL ES 3; tested on one phone only; the release notes explain how to install it and give its SHA-256). Google Play publication and release signing are not included. Never commit signing keys or credentials.
 
 ### What is included
 
@@ -174,7 +174,7 @@ Los menús de configuración y de resultados bloquean el movimiento, la mirada, 
 3. Instala ese APK, o usa el perfil de compilación de Android de Unity con esta escena y **Build And Run** tras seleccionar el teléfono.
 4. En el teléfono, comprueba el teclado numérico, las duraciones inválidas, una partida corta que termina en cero, repetir y cambiar la duración, el cambio de idioma, mover, mirar, correr y disparar a la vez, la recarga y la munición, apuntar en los dos modos, el menú de ajustes, la selección de arma y el sonido por arma, la edición de la posición de los botones, el contador de FPS, disparos a todas las partes del soldado desde todos los lados, y pasar a segundo plano y volver mientras se mantienen controles.
 
-La primera importación y la compilación con IL2CPP pueden tardar varios minutos. Existe un APK compilado de forma local para la demostración; este repositorio de código fuente no ofrece una publicación (release) de GitHub ni una descarga del APK. No se incluyen la publicación en Google Play ni la firma de producción. Nunca subas claves de firma ni credenciales al repositorio.
+La primera importación y la compilación con IL2CPP pueden tardar varios minutos. Hay un APK de desarrollo compilado que se puede descargar desde el [release v1.0.0](https://github.com/FedeJGM/field-ops-prototype/releases/latest) (Android 8.0 o superior, ARM de 64 bits, OpenGL ES 3; probado en un solo teléfono; las notas del release explican cómo instalarlo y dan su SHA-256). No se incluyen la publicación en Google Play ni la firma de producción. Nunca subas claves de firma ni credenciales al repositorio.
 
 ### Qué incluye
 
